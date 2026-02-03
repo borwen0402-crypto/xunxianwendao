@@ -514,6 +514,55 @@ const GameData = {
             ]
         },
         {
+            id: "evt_ambient_bridge_shadow",
+            eventType: "trial",
+            title: "桥下影子",
+            desc: "你从桥边路过，忽觉水面倒影慢了半拍，像是另一个你在桥下回头。",
+            meta: { tendencyTags: ["omen"], mapIds: ["思桥"] },
+            options: [
+                {
+                    id: "follow",
+                    text: "循影而行",
+                    log: "你顺着那道影子走了两步，阴风裹住脚踝。符火余烬未散，似可借道一次。",
+                    meta: { story: { setFlags: { yin_pass_ready: true } } }
+                },
+                { id: "leave", text: "不作停留", log: "你压住杂念，离开桥边。水声仍在数你的心跳。" }
+            ]
+        },
+        {
+            id: "evt_ambient_paper_ashes",
+            eventType: "trial",
+            title: "纸灰余温",
+            desc: "路边有一撮纸灰尚温，像刚烧过不久。你闻到一丝淡淡的香灰味。",
+            meta: { tendencyTags: ["order"] },
+            options: [
+                { id: "cover", text: "以土覆灰", log: "你以土覆灰，心念稍定。", delta: { playerMp: 2 } },
+                { id: "scatter", text: "随风散去", log: "你让纸灰随风散去，像把某段因果还给了夜色。" }
+            ]
+        },
+        {
+            id: "evt_ambient_yin_whisper",
+            eventType: "trial",
+            title: "背后低语",
+            desc: "你听见背后有人低语，却分不清是风声还是人的话。",
+            meta: { tendencyTags: ["chaos"] },
+            options: [
+                { id: "listen", text: "停步倾听", log: "你停步倾听，耳畔嗡鸣更甚，心神微乱。", delta: { playerMp: -3 } },
+                { id: "chant", text: "默诵护心诀", log: "你默诵护心诀，低语渐远。", delta: { playerMp: 1 } }
+            ]
+        },
+        {
+            id: "evt_ambient_cold_lantern",
+            eventType: "enlightenment",
+            title: "冷灯照路",
+            desc: "雾里浮起一点冷灯，照不见灯芯，却照得见你的影子。",
+            meta: { tendencyTags: ["omen"] },
+            options: [
+                { id: "bow", text: "向灯一揖", log: "你向灯一揖，胸口那点不安散了些。", delta: { playerHp: 3 } },
+                { id: "stare", text: "凝视灯影", log: "你凝视灯影，忽觉目眩，像被看了一眼。", delta: { playerMp: -2 } }
+            ]
+        },
+        {
             id: "story_windchain_d1_01",
             eventType: "trial",
             title: "第一夜：阴风入骨",

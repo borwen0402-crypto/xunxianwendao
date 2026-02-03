@@ -1132,7 +1132,25 @@ const UI = {
         grid.style.marginBottom = '10px';
 
         const allMaps = Object.keys(GameData.mapConfig);
-        
+        const isYinId = (id) => {
+            const m = GameData.mapConfig && GameData.mapConfig[id];
+            const w = m && typeof m.world === 'string' ? m.world : '';
+            return w === 'yin' || (typeof id === 'string' && id.startsWith('阴间'));
+        };
+        const getYinGateHint = () => {
+            const isYinYangDao = gameState.activeDao === '阴阳道';
+            const inv = gameState.inventory && typeof gameState.inventory === 'object' ? gameState.inventory : (gameState.inventory = {});
+            const hasToken = (Number(inv['通阴符']) || 0) > 0;
+            const sf = (gameState.story && gameState.story.flags && typeof gameState.story.flags === 'object') ? gameState.story.flags : {};
+            const hasReady = sf.yin_pass_ready === true;
+            const canAttempt = isYinYangDao || hasToken || hasReady;
+            const tokenCount = Math.max(0, Number(inv['通阴符']) || 0);
+            const hint = isYinYangDao
+                ? '阴阳道可直接借道阴阳'
+                : (hasReady ? '符火余烬尚在：可借道一次（不消耗通阴符）' : (hasToken ? `可消耗通阴符×1进入（当前：${tokenCount}）` : '需要【阴阳道】或【通阴符×1】'));
+            return { canAttempt, hint };
+        };
+
         allMaps.forEach(nid => {
             const map = GameData.mapConfig[nid];
             if (!map) return;
@@ -1141,51 +1159,51 @@ const UI = {
             const isNeighbor = current.neighbors && current.neighbors.includes(nid);
             const isCrossLayer = current.crossLayerMap === nid;
             const isReachable = isNeighbor || isCrossLayer;
+            const yinGateTarget = nid === '阴间·思桥下层（运魂之河）' && isYinId(nid);
 
-            // 如果不是全部显示模式，且不可到达也不是当前地图，则跳过
             if (!this.showAllMaps && !isReachable && !isCurrent) return;
 
             const btn = document.createElement('button');
-            btn.textContent = map.name;
             btn.className = "map-btn";
-            
-            // 样式处理
+
+            let label = map.name;
+            if (!isCurrent && isCrossLayer) label += " (借道)";
+            if (map.locked) label += " 🔒";
+            btn.textContent = label;
+
+            let canClick = false;
             if (isCurrent) {
-                btn.classList.add('active'); // 假设 CSS 有 active 类，或者手动加样式
+                btn.classList.add('active');
                 btn.style.border = "1px solid #4CAF50";
                 btn.style.color = "#4CAF50";
                 btn.disabled = true;
             } else if (isReachable) {
-                // 可到达
-                if (isCrossLayer) {
-                    btn.textContent += " (借道)";
-                    btn.style.border = "1px solid #9b59b6"; // 紫色提示
-                }
+                canClick = true;
+                if (isCrossLayer) btn.style.border = "1px solid #9b59b6";
             } else {
-                // 不可到达
                 btn.disabled = true;
                 btn.style.opacity = "0.4";
                 btn.style.cursor = "not-allowed";
-                // btn.title = "路途遥远，需先抵达邻近区域";
-            }
-            
-            if (map.locked) {
-                btn.disabled = true;
-                btn.title = "此地封禁，不可进入";
-                btn.innerHTML += " 🔒";
-                btn.style.opacity = "0.6";
             }
 
-            if (!btn.disabled || isReachable) {
-                btn.addEventListener('click', () => Logic.requestEnterMap(nid));
-                // 确保可到达的即使被 locked 逻辑覆盖（虽然逻辑上不应该既是邻居又被锁，或者锁了就不能进），这里 logic 会处理
-                // 如果 locked 是全局锁，那确实不能进。上面的 locked check 覆盖了 reachable。
-                // 修正：如果 locked，保持 disabled。如果没 locked 且 reachable，绑定点击。
-                if (map.locked) {
-                    btn.disabled = true;
+            if (map.locked) {
+                if (yinGateTarget && isReachable) {
+                    const gate = getYinGateHint();
+                    btn.title = `阴间通行：${gate.hint}`;
+                    btn.style.border = "1px solid #9b59b6";
+                    btn.style.opacity = "0.95";
+                    canClick = true;
                 } else {
-                    btn.disabled = false;
+                    btn.disabled = true;
+                    btn.title = "此地封禁，不可进入";
+                    btn.style.opacity = "0.6";
+                    canClick = false;
                 }
+            }
+
+            if (canClick) {
+                btn.disabled = false;
+                btn.addEventListener('click', () => Logic.requestEnterMap(nid));
             }
 
             grid.appendChild(btn);
@@ -1205,17 +1223,25 @@ const UI = {
                 layerBtn.style.marginTop = "10px";
                 layerBtn.style.background = "linear-gradient(45deg, #333, #555)";
                 layerBtn.style.border = "1px solid #777";
-                
-                if (targetMap.locked) {
-                    // Check if accessible (logic from requestEnterMap logic duplicate for UI hint?)
-                    // For now just show lock if locked, but Logic.requestEnterMap handles the specific yin pass logic
-                    // We won't disable it here to allow the "interactive" feel of clicking and getting a message
+                const hintLine = document.createElement('div');
+                hintLine.style.marginTop = '6px';
+                hintLine.style.fontSize = '12px';
+                hintLine.style.color = '#aaa';
+                hintLine.style.lineHeight = '1.35';
+                if (targetMap.locked && (targetId === '阴间·思桥下层（运魂之河）')) {
+                    const gate = getYinGateHint();
+                    hintLine.textContent = `阴间通行：${gate.hint}`;
+                } else if (targetMap.locked) {
+                    hintLine.textContent = '此地封禁，暂不可进入';
+                } else if ((targetMap.world === 'yin') || (typeof targetId === 'string' && targetId.startsWith('阴间'))) {
+                    hintLine.textContent = '提示：阴间战斗将承受额外惩罚';
                 }
 
                 layerBtn.onclick = () => {
                     Logic.requestEnterMap(targetId);
                 };
                 mapList.appendChild(layerBtn);
+                if (hintLine.textContent) mapList.appendChild(hintLine);
             }
         }
     },
@@ -1365,7 +1391,47 @@ const UI = {
             }
 
             const btn = document.createElement('button');
-            btn.textContent = "使用";
+            const effect = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[item] : null;
+            const isTalisman = effect && effect.type === 'talisman';
+            let useHint = '';
+            if (isTalisman) {
+                const cd = effect.cooldown && typeof effect.cooldown === 'object' ? effect.cooldown : {};
+                const inCombat = !!gameState.combat;
+                const statuses = (inCombat && gameState.combat && gameState.combat.player && Array.isArray(gameState.combat.player.statuses))
+                    ? gameState.combat.player.statuses
+                    : [];
+                const findSt = (id) => statuses.find(s => s && typeof s === 'object' && s.id === id);
+                const mapId = (() => {
+                    const m = gameState.currentMap && typeof gameState.currentMap === 'object' ? gameState.currentMap : null;
+                    if (m && typeof m.id === 'string' && m.id.trim()) return m.id.trim();
+                    if (m && typeof m.name === 'string' && m.name.trim()) return m.name.trim();
+                    return null;
+                })();
+                const mapState = (mapId && gameState.mapStates && typeof gameState.mapStates === 'object' && gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object')
+                    ? gameState.mapStates[mapId]
+                    : null;
+                const perMapUsed = !!(mapState && mapState.talismanUsed && typeof mapState.talismanUsed === 'object' && mapState.talismanUsed[item] === true);
+
+                if (cd.kind === 'world' && cd.oncePerMap === true && perMapUsed) {
+                    useHint = '本图已用';
+                } else if (cd.kind === 'battle') {
+                    if (!inCombat) {
+                        useHint = '需战斗中';
+                    } else if (cd.oncePerBattle === true && findSt(`used_talisman_${item}`)) {
+                        useHint = '本场已用';
+                    } else if (Number.isFinite(Number(cd.rounds)) && Number(cd.rounds) > 0) {
+                        const st = findSt(`cd_talisman_${item}`);
+                        const d = st && Number.isFinite(Number(st.duration)) ? Math.max(0, Math.floor(Number(st.duration))) : 0;
+                        if (d > 0) useHint = `CD${d}`;
+                    }
+                }
+            }
+
+            btn.textContent = useHint ? `使用（${useHint}）` : "使用";
+            if (useHint) {
+                btn.disabled = true;
+                btn.style.opacity = "0.75";
+            }
             btn.addEventListener('click', () => Logic.requestUseItem(item));
             
             card.appendChild(span);
@@ -1407,7 +1473,41 @@ const UI = {
             if (index < items.length) {
                 const [name, count] = items[index];
                 slot.textContent = name.substring(0, 1); // 显示首字
-                slot.title = `${name} (x${count})`;
+                let title = `${name} (x${count})`;
+                const effect = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[name] : null;
+                const isTalisman = effect && effect.type === 'talisman';
+                if (isTalisman) {
+                    const cd = effect.cooldown && typeof effect.cooldown === 'object' ? effect.cooldown : {};
+                    const inCombat = !!gameState.combat;
+                    const statuses = (inCombat && gameState.combat && gameState.combat.player && Array.isArray(gameState.combat.player.statuses))
+                        ? gameState.combat.player.statuses
+                        : [];
+                    const findSt = (id) => statuses.find(s => s && typeof s === 'object' && s.id === id);
+                    const mapId = (() => {
+                        const m = gameState.currentMap && typeof gameState.currentMap === 'object' ? gameState.currentMap : null;
+                        if (m && typeof m.id === 'string' && m.id.trim()) return m.id.trim();
+                        if (m && typeof m.name === 'string' && m.name.trim()) return m.name.trim();
+                        return null;
+                    })();
+                    const mapState = (mapId && gameState.mapStates && typeof gameState.mapStates === 'object' && gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object')
+                        ? gameState.mapStates[mapId]
+                        : null;
+                    const perMapUsed = !!(mapState && mapState.talismanUsed && typeof mapState.talismanUsed === 'object' && mapState.talismanUsed[name] === true);
+                    let hint = '';
+                    if (cd.kind === 'world' && cd.oncePerMap === true && perMapUsed) {
+                        hint = '本图已用';
+                    } else if (cd.kind === 'battle') {
+                        if (!inCombat) hint = '需战斗中';
+                        else if (cd.oncePerBattle === true && findSt(`used_talisman_${name}`)) hint = '本场已用';
+                        else if (Number.isFinite(Number(cd.rounds)) && Number(cd.rounds) > 0) {
+                            const st = findSt(`cd_talisman_${name}`);
+                            const d = st && Number.isFinite(Number(st.duration)) ? Math.max(0, Math.floor(Number(st.duration))) : 0;
+                            if (d > 0) hint = `冷却：${d}回合`;
+                        }
+                    }
+                    if (hint) title += `\n${hint}`;
+                }
+                slot.title = title;
                 slot.classList.add('has-item');
                 const rc = getRarityClass(name);
                 if (rc) slot.classList.add(rc);
@@ -1532,11 +1632,6 @@ const UI = {
     // 添加日志
     addLog: function(msg, type = 'normal') {
         const container = document.getElementById('log-container');
-        // Force light theme (fix for persistent dark background)
-        if (container && container.style.backgroundColor !== 'rgb(245, 245, 245)' && container.style.backgroundColor !== '#f5f5f5') {
-             container.style.backgroundColor = '#f5f5f5';
-             container.style.color = '#111';
-        }
 
         const div = document.createElement('div');
         div.className = 'log-entry';
@@ -1887,11 +1982,11 @@ const UI = {
             div.style.textAlign = 'center';
         } else if (entry && entry.tag === 'skill_cost') {
             div.className = 'log-text-tertiary';
-        } else if (entry && entry.tag === 'skill_heal') {
+        } else if (entry && (entry.tag === 'skill_heal' || entry.tag === 'skill_sacrifice')) {
             div.className = 'log-text-success';
         }
 
-        if (entry && typeof entry.tag === 'string' && (entry.tag === 'suppression' || entry.tag === 'phase_change' || entry.tag.startsWith('status_') || entry.tag.startsWith('ai_'))) {
+        if (entry && typeof entry.tag === 'string' && (entry.tag === 'suppression' || entry.tag === 'phase_change' || entry.tag.startsWith('status_') || entry.tag.startsWith('ai_') || entry.tag.startsWith('skill_'))) {
             div.style.fontWeight = 'bold';
         }
         if (entry && entry.tag === 'phase_change') {
@@ -1906,6 +2001,25 @@ const UI = {
         } else if (entry && entry.tag === 'demon_end_lose') {
             div.className = 'log-text-secondary log-text-bold';
             this.spawnCombatFloat('道途未断', 'failsoft', meta || {});
+        }
+
+        if (entry && typeof entry.tag === 'string') {
+            if (entry.tag === 'status_undying') {
+                this.spawnCombatFloat('不腐', 'rare', meta || {});
+            } else if (entry.tag === 'status_fear') {
+                this.spawnCombatFloat('恐惧', 'fail', meta || {});
+            } else if (entry.tag === 'skill_summon' || entry.tag === 'summon') {
+                const summonName = meta && meta.summon && typeof meta.summon.name === 'string' ? meta.summon.name : '';
+                const count = meta && meta.summon && Number.isFinite(Number(meta.summon.count)) ? Math.floor(Number(meta.summon.count)) : 0;
+                const label = summonName ? (count > 1 ? `${summonName}+${count}` : summonName) : '召唤';
+                this.spawnCombatFloat(label, 'buff', meta || {});
+            } else if (entry.tag === 'skill_chant' || entry.tag === 'chant') {
+                this.spawnCombatFloat('吟唱', 'sys', meta || {});
+            } else if (entry.tag === 'skill_domain') {
+                this.spawnCombatFloat('鬼域', 'buff', meta || {});
+            } else if (entry.tag === 'skill_sacrifice') {
+                this.spawnCombatFloat('血祭', 'rare', meta || {});
+            }
         }
 
         const dropName = (() => {

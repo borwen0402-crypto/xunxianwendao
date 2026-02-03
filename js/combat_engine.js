@@ -460,14 +460,14 @@ const CombatEngine = {
                 const chant = findStatus(m.statuses, 'shan_ghost_chant');
                 if (!chant && round === 0) {
                     const text = "“叮铃铃，叮铃铃，\n一阵风，一阵铃。\n有人说，有人言：\n雷填填兮，雨冥冥，\n猨啾啾兮，狖夜鸣，\n风飒飒兮，木萧萧，\n思公子兮，徒离忧……”";
-                    logs.push({ type: 'battle', text, tag: 'chant', round, sourceId: m.id });
+                    logs.push({ type: 'battle', text, tag: 'skill_chant', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '山鬼吟唱', duration: 3 } });
                     statusChanges.push({ target: { monsterId: m.id }, op: 'refresh', status: { id: 'shan_ghost_chant', name: '山鬼吟唱', stacks: 1, duration: 3 } });
                 } else if (chant && Number.isFinite(Number(chant.duration))) {
                     const d0 = Math.max(0, Math.floor(Number(chant.duration)));
                     if (d0 <= 1) {
                         statusChanges.push({ target: 'player', op: 'refresh', status: { id: 'fear', name: '恐惧', stacks: 1, duration: 1 } });
                         statusChanges.push({ target: { monsterId: m.id }, op: 'remove', status: { id: 'shan_ghost_chant' } });
-                        logs.push({ type: 'battle', text: `【${m.name}】吟唱未断，你心神一颤！`, tag: 'status_fear', round, sourceId: m.id });
+                        logs.push({ type: 'battle', text: `【${m.name}】吟唱未断，你心神一颤！`, tag: 'status_fear', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '山鬼吟唱', duration: 1 } });
                     } else {
                         statusChanges.push({ target: { monsterId: m.id }, op: 'tick', status: { id: 'shan_ghost_chant', name: '山鬼吟唱', stacks: 1, duration: d0 - 1 } });
                     }
@@ -481,7 +481,7 @@ const CombatEngine = {
                         if (baseCombat && Array.isArray(baseCombat.monsters)) baseCombat.monsters.push({ ...s });
                         monsterHpById[summonId] = s.hp;
                         startingMonsterHpById[summonId] = s.hp;
-                        logs.push({ type: 'battle', text: `【${m.name}】召出魂兽！`, tag: 'summon', round, sourceId: m.id });
+                        logs.push({ type: 'battle', text: `【${m.name}】召出魂兽！`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '魂兽召唤', summon: { name: '魂兽', count: 1 } } });
                     }
                 }
             }
@@ -490,7 +490,7 @@ const CombatEngine = {
                 const domain = findStatus(m.statuses, 'ghost_domain');
                 if (!domain && round === 0) {
                     statusChanges.push({ target: { monsterId: m.id }, op: 'refresh', status: { id: 'ghost_domain', name: '鬼域展开', stacks: 1, duration: 999 } });
-                    logs.push({ type: 'battle', text: `【${m.name}】鬼域展开，阴气陡盛。`, tag: 'phase_change', round, sourceId: m.id });
+                    logs.push({ type: 'battle', text: `【${m.name}】鬼域展开，阴气陡盛。`, tag: 'skill_domain', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '鬼域展开' } });
                 }
 
                 const aliveMinions = monsters.filter(mm => mm && mm.id !== m.id && (Number(monsterHpById[mm.id]) || 0) > 0);
@@ -501,7 +501,7 @@ const CombatEngine = {
                     monsterHpById[victim.id] = 0;
                     const heal = Math.max(1, Math.floor(bossMaxHp * 0.2));
                     monsterHpById[m.id] = Math.min(bossMaxHp, bossHp + heal);
-                    logs.push({ type: 'battle', text: `【${m.name}】血祭吞噬随从，恢复 ${heal} 气血`, tag: 'skill_heal', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '血祭', heal } });
+                    logs.push({ type: 'battle', text: `【${m.name}】血祭吞噬随从，恢复 ${heal} 气血`, tag: 'skill_sacrifice', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '血祭', heal } });
                 } else if (aliveMinions.length < 2 && random() < 0.55) {
                     const want = 2 + Math.floor(random() * 3);
                     const cap = 6;
@@ -514,7 +514,7 @@ const CombatEngine = {
                         monsterHpById[sid] = s.hp;
                         startingMonsterHpById[sid] = s.hp;
                     }
-                    if (canAdd > 0) logs.push({ type: 'battle', text: `【${m.name}】万鬼朝宗，阴魂应召（${canAdd}）`, tag: 'summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '万鬼朝宗' } });
+                    if (canAdd > 0) logs.push({ type: 'battle', text: `【${m.name}】万鬼朝宗，阴魂应召（${canAdd}）`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '万鬼朝宗', summon: { name: '阴魂', count: canAdd } } });
                 }
             }
 
@@ -553,8 +553,17 @@ const CombatEngine = {
             const yinPenalty = (() => {
                 if (!env || env.world !== 'yin') return 1;
                 if (player && player.activeDao === '阴阳道') return 1;
-                if (Array.isArray(m.tags) && (m.tags.includes('yin') || m.tags.includes('ghost'))) return 1.2;
-                return 1;
+                if (!Array.isArray(m.tags) || !(m.tags.includes('yin') || m.tags.includes('ghost'))) return 1;
+                const cfg = (typeof window !== 'undefined' && window.RulesConfig && typeof window.RulesConfig === 'object') ? window.RulesConfig : null;
+                const normalRaw = cfg && Object.prototype.hasOwnProperty.call(cfg, 'yinPenaltyNormal') ? Number(cfg.yinPenaltyNormal) : 1.1;
+                const eliteRaw = cfg && Object.prototype.hasOwnProperty.call(cfg, 'yinPenaltyElite') ? Number(cfg.yinPenaltyElite) : 1.25;
+                const bossRaw = cfg && Object.prototype.hasOwnProperty.call(cfg, 'yinPenaltyBoss') ? Number(cfg.yinPenaltyBoss) : 1.35;
+                const normal = Number.isFinite(normalRaw) ? Math.max(1, Math.min(2, normalRaw)) : 1.1;
+                const elite = Number.isFinite(eliteRaw) ? Math.max(1, Math.min(2, eliteRaw)) : 1.25;
+                const boss = Number.isFinite(bossRaw) ? Math.max(1, Math.min(2, bossRaw)) : 1.35;
+                if (m.tags.includes('boss')) return boss;
+                if (m.tags.includes('elite')) return elite;
+                return normal;
             })();
             const immune = findStatus(player.statuses, 'immune');
             const monsterDmg = immune ? 0 : Math.floor(((Number(m.atk) || 0) + flatDamage) * takenMult * yinPenalty * (0.9 + random() * 0.2));

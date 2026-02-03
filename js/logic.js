@@ -714,7 +714,7 @@ const Rules = {
 if (typeof window !== 'undefined') {
     window.Rules = Rules;
     if (!window.RulesConfig || typeof window.RulesConfig !== 'object') {
-        window.RulesConfig = { encounterRate: 0.2, regenRate: 0.05, dropChance: 0.3, mfEpsilon: 0.03 };
+        window.RulesConfig = { encounterRate: 0.2, regenRate: 0.05, dropChance: 0.3, mfEpsilon: 0.03, yinPenaltyNormal: 1.1, yinPenaltyElite: 1.25, yinPenaltyBoss: 1.35, ambientEventRate: 0.06 };
     }
     const reg = {};
     Object.keys(Rules).forEach(k => {
@@ -732,6 +732,74 @@ const Logic = {
     // 游戏主循环句柄
     loopInterval: null,
     _uiHoldUntilTs: 0,
+    _maybeTriggerAmbientEvent: function(tickDeltaKey) {
+        if (typeof GameData === 'undefined' || !GameData || !Array.isArray(GameData.events)) return false;
+        if (typeof UI === 'undefined' || !UI || typeof UI.showEventModal !== 'function') return false;
+
+        const cfg = (typeof window !== 'undefined' && window.RulesConfig && typeof window.RulesConfig === 'object') ? window.RulesConfig : null;
+        const rateRaw = cfg && Object.prototype.hasOwnProperty.call(cfg, 'ambientEventRate') ? Number(cfg.ambientEventRate) : 0.06;
+        let rate = Number.isFinite(rateRaw) ? Math.max(0, Math.min(0.5, rateRaw)) : 0.06;
+        if (gameState.isHanging) rate *= 0.35;
+        if (rate <= 0) return false;
+
+        gameState._lastRngConsumerTag = 'explore.event.roll';
+        if (gameState.rng() >= rate) return false;
+
+        const storyFlags = (gameState.story && typeof gameState.story === 'object' && gameState.story.flags && typeof gameState.story.flags === 'object')
+            ? gameState.story.flags
+            : {};
+        const world = (gameState.world && typeof gameState.world === 'object') ? gameState.world : null;
+        const map = gameState.currentMap && typeof gameState.currentMap === 'object' ? gameState.currentMap : null;
+        const mapId = map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map && typeof map.name === 'string' ? map.name : null);
+
+        const pool = GameData.events
+            .filter(e => e && typeof e === 'object' && typeof e.id === 'string' && e.id.startsWith('evt_ambient_'))
+            .filter(e => {
+                if (e.eventType === 'story') return false;
+                const meta = e.meta && typeof e.meta === 'object' ? e.meta : {};
+                if (meta.mapIds && Array.isArray(meta.mapIds) && mapId) {
+                    const ok = meta.mapIds.some(x => typeof x === 'string' && x === mapId);
+                    if (!ok) return false;
+                }
+                return (typeof Rules !== 'undefined' && Rules && typeof Rules.isEventAvailable === 'function')
+                    ? Rules.isEventAvailable(e, world)
+                    : true;
+            });
+        if (!pool.length) return false;
+
+        const weights = [];
+        let sum = 0;
+        for (let i = 0; i < pool.length; i++) {
+            const e = pool[i];
+            const w = (typeof Rules !== 'undefined' && Rules && typeof Rules.getEventWeight === 'function')
+                ? Number(Rules.getEventWeight(e, storyFlags, world))
+                : 1;
+            const ww = Number.isFinite(w) ? Math.max(0, w) : 0;
+            weights.push(ww);
+            sum += ww;
+        }
+        if (!(sum > 0)) return false;
+
+        gameState._lastRngConsumerTag = 'explore.event.pick';
+        let r = gameState.rng() * sum;
+        let picked = pool[0];
+        for (let i = 0; i < pool.length; i++) {
+            r -= weights[i];
+            if (r <= 0) {
+                picked = pool[i];
+                break;
+            }
+        }
+
+        if (picked) {
+            UI.showEventModal(picked);
+            if (typeof tickDeltaKey === 'string' && tickDeltaKey.trim()) {
+                gameState.lastMeta = { source: 'ambient_event', tick: (gameState.story && gameState.story.tick) || 0, payload: { eventId: picked.id, deltaKey: tickDeltaKey } };
+            }
+            return true;
+        }
+        return false;
+    },
 
     // 1. 进入地图
     requestEnterMap: function(mapName) {
@@ -963,6 +1031,9 @@ const Logic = {
                 }
             }
         } else {
+            if (allowEventModal && this._maybeTriggerAmbientEvent(tickDeltaKey)) {
+                return { paused: true, combatResult: null };
+            }
             Rules.processExploration({ deltaKey: tickDeltaKey });
             if (gameState && gameState.daoType === '鬼道' && typeof gameState.tickGhosts === 'function') {
                 gameState.tickGhosts(tickDeltaKey);
