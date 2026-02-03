@@ -522,6 +522,13 @@ function initEventListeners() {
 
     if (btnBetaBoostLeft) btnBetaBoostLeft.addEventListener('click', handleBetaBoost);
 
+    // Auto-remove duplicate button if it exists (Fix for "Two Buttons" issue)
+    const duplicateBtn = document.getElementById('btn-beta-boost');
+    if (duplicateBtn) {
+        duplicateBtn.remove();
+        console.log("Removed duplicate beta boost button (btn-beta-boost)");
+    }
+
     const btnReset = document.getElementById('btn-reset-save');
     if (btnReset) btnReset.addEventListener('click', handleResetSave);
 
