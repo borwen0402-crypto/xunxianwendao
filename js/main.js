@@ -441,10 +441,12 @@ function initEventListeners() {
 
         modModal.classList.remove('hidden');
     };
+    window.openStatsModifier = openStatsModifier;
 
     const closeStatsModifier = () => {
         if (modModal) modModal.classList.add('hidden');
     };
+    window.closeStatsModifier = closeStatsModifier;
 
     const applyStatsModifier = () => {
         if (typeof gameState === 'undefined') return;

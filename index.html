@@ -81,7 +81,7 @@
                          <label><input type="checkbox" id="pause-on-event" checked> 遇事暂停挂机</label>
                          <button id="btn-view-release-notes" class="btn-mini" style="margin-top:6px; width:100%;">📄 查看更新公告</button>
                          <button id="btn-theme-toggle" class="btn-mini" style="margin-top:6px; width:100%;">切换主题 (默认/摸鱼)</button>
-                         <button id="btn-stats-modifier" class="btn-mini" style="margin-top:6px; width:100%; background: #9b59b6; border-color: #8e44ad; color: white;">🛠️ 数值修改器</button>
+                         <button id="btn-stats-modifier" class="btn-mini" style="margin-top:6px; width:100%; background: #9b59b6; border-color: #8e44ad; color: white;" onclick="window.openStatsModifier && window.openStatsModifier()">🛠️ 数值修改器</button>
                          <label id="debug-meta-row" title="显示详细的调试元数据" style="display:none;"><input type="checkbox" id="debug-meta-toggle"> 显示调试元数据</label>
                     </div>
 
@@ -386,17 +386,17 @@
         5. ui.js - 视图渲染 (依赖 State, Data, Logic)
         6. main.js - 控制器/入口 (依赖 UI, Logic, State)
     -->
-    <script src="js/data.js?v=2.37"></script>
-    <script src="js/data_skills_common.js?v=2.37"></script>
-    <script src="js/data_skills_ghost.js?v=2.37"></script>
-    <script src="js/data_skills_yinyang.js?v=2.37"></script>
-    <script src="js/data_skills_qiankun.js?v=2.37"></script>
-    <script src="js/data_skills_tianyi.js?v=2.37"></script>
-    <script src="js/state.js?v=2.37"></script>
-    <script src="js/combat_engine.js?v=2.37"></script>
-    <script src="js/logic.js?v=2.37"></script>
-    <script src="js/ui.js?v=2.37"></script>
-    <script src="js/main.js?v=2.37"></script>
+    <script src="js/data.js?v=2.38"></script>
+    <script src="js/data_skills_common.js?v=2.38"></script>
+    <script src="js/data_skills_ghost.js?v=2.38"></script>
+    <script src="js/data_skills_yinyang.js?v=2.38"></script>
+    <script src="js/data_skills_qiankun.js?v=2.38"></script>
+    <script src="js/data_skills_tianyi.js?v=2.38"></script>
+    <script src="js/state.js?v=2.38"></script>
+    <script src="js/combat_engine.js?v=2.38"></script>
+    <script src="js/logic.js?v=2.38"></script>
+    <script src="js/ui.js?v=2.38"></script>
+    <script src="js/main.js?v=2.38"></script>
     
     <script>
         window.__FREEZE_TAG__ = 'V2.0.0-internal-alpha';
