@@ -56,6 +56,7 @@ const CombatEngine = {
             realm: p.realm || "寻道",
             subRealm: p.subRealm || "初期",
             activeDao: p.activeDao || "随机",
+            name: p.username || p.name || "你",
             statuses: Array.isArray(p.statuses) ? p.statuses.slice() : []
         };
 
@@ -215,12 +216,12 @@ const CombatEngine = {
                     const parts = [];
                     if (omenAll !== 0) parts.push(`Omen${omenAll > 0 ? `+${omenAll}` : `${omenAll}`}`);
                     if (chaosAll !== 0) parts.push(`Chaos${chaosAll > 0 ? `+${chaosAll}` : `${chaosAll}`}`);
-                    logs.push({ type: 'battle', text: `世界代价：${parts.join('，')}`, tag: 'skill_cost', round, meta: { action: 'skill', skillName: skill.name } });
+                    logs.push({ type: 'battle', text: `世界代价：${parts.join('，')}`, tag: 'skill_cost', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name } });
                 }
 
                 if (isInvert && env && typeof env.mapId === 'string' && env.mapId.trim()) {
                     effects.push({ target: 'mapState', type: 'invertYinYang', payload: { mapId: env.mapId.trim() }, meta: { external: true } });
-                    logs.push({ type: 'battle', text: '阴阳被你拨动，气机翻转。', tag: 'skill', round, meta: { action: 'skill', skillName: skill.name } });
+                    logs.push({ type: 'battle', text: '阴阳被你拨动，气机翻转。', tag: 'skill', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name } });
                 }
 
                 if (isSummonGhost) {
@@ -233,7 +234,7 @@ const CombatEngine = {
                     const list = Array.isArray(player.ghosts) ? player.ghosts : [];
                     player.ghosts = list;
                     if (cap > 0 && list.length >= cap) {
-                        logs.push({ type: 'battle', text: '魂瓮已满，鬼影化作一缕魂力。', tag: 'skill', round, meta: { action: 'skill', skillName: skill.name } });
+                        logs.push({ type: 'battle', text: '魂瓮已满，鬼影化作一缕魂力。', tag: 'skill', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name } });
                         effects.push({ target: 'inventory', type: 'item', payload: { name: '魂力碎片', countDelta: 1 }, meta: { external: true } });
                     } else {
                         const types = ['战士', '防御', '动物', '法师', '刺客'];
@@ -244,14 +245,14 @@ const CombatEngine = {
                         const maxHp = Math.max(1, Math.floor(40 + realmIdx * 8 + (isElite ? 25 : 0)));
                         const g = { id: gid, type: pick, rank, level: 1, exp: 0, loyalty: 50, resentment: 0, hp: maxHp, maxHp };
                         list.push(g);
-                        logs.push({ type: 'battle', text: `鬼物成形：${rank}·${pick}`, tag: 'skill', round, meta: { action: 'skill', skillName: skill.name } });
+                        logs.push({ type: 'battle', text: `鬼物成形：${rank}·${pick}`, tag: 'skill', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name } });
                         effects.push({ target: 'ghosts', type: 'add', payload: g, meta: { external: true } });
                     }
                 }
 
                 if (isGhostBuff) {
                     effects.push({ target: 'ghosts', type: 'healAll', value: 0.2, meta: { external: true } });
-                    logs.push({ type: 'battle', text: '鬼气回涌，鬼物气机稍稳。', tag: 'skill', round, meta: { action: 'skill', skillName: skill.name } });
+                    logs.push({ type: 'battle', text: '鬼气回涌，鬼物气机稍稳。', tag: 'skill', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name } });
                 }
 
                 const dealTo = (monsterId, dmg, hitIdx) => {
@@ -277,7 +278,7 @@ const CombatEngine = {
                         total += d;
                         dealTo(mm.id, d, 1);
                     }
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 波及全体，造成总计 ${total} 伤害`, tag: 'skill', round, targetId: target.id, meta: { action: 'skill', skillName: skill.name, damage: total } });
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 波及全体，造成总计 ${total} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: total } });
                 } else if (isDoubleHit) {
                     const spiritMult = isSpiritBonus && Array.isArray(target.tags) && target.tags.includes('spirit') ? 1.5 : 1;
                     const d1 = Math.max(0, rollDmg(0.8, spiritMult));
@@ -285,14 +286,14 @@ const CombatEngine = {
                     dealTo(target.id, d1, 1);
                     dealTo(target.id, d2, 2);
                     const sum = d1 + d2;
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 连击两次，造成 ${sum} 伤害`, tag: 'skill', round, targetId: target.id, meta: { action: 'skill', skillName: skill.name, damage: sum } });
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 连击两次，造成 ${sum} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: sum } });
                 } else if (baseDmg > 0) {
                     const spiritMult = isSpiritBonus && Array.isArray(target.tags) && target.tags.includes('spirit') ? 1.5 : 1;
                     const playerDmg = Math.max(0, rollDmg(1, spiritMult));
                     dealTo(target.id, playerDmg, 1);
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 造成 ${playerDmg} 伤害`, tag: 'skill', round, targetId: target.id, meta: { action: 'skill', skillName: skill.name, damage: playerDmg } });
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 造成 ${playerDmg} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: playerDmg } });
                 } else {
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text}`, tag: 'skill', round, targetId: target.id, meta: { action: 'skill', skillName: skill.name, damage: 0 } });
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text}`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: 0 } });
                 }
 
                 if (skill.heal) {
@@ -304,7 +305,7 @@ const CombatEngine = {
                         playerHp = playerHp + healed;
                     }
                     effects.push({ source: 'player', target: 'player', type: 'hp', value: healed, meta: { kind: 'heal' } });
-                    if (healed > 0) logs.push({ type: 'battle', text: `恢复 ${healed} 气血`, tag: 'skill_heal', round, meta: { action: 'skill', skillName: skill.name, heal: healed } });
+                    if (healed > 0) logs.push({ type: 'battle', text: `恢复 ${healed} 气血`, tag: 'skill_heal', round, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, heal: healed } });
                 }
             } else {
                 const isSpirit = Array.isArray(target.tags) && target.tags.includes('spirit');
@@ -315,7 +316,7 @@ const CombatEngine = {
                 const playerOnHitRes = this.callRule(options, 'status', { phase: 'onHit', battlePhase, action: 'basic', kind: 'damage', amount: playerDmg, source: 'player', target: { monsterId: target.id }, player, skill: null, monster: target, monsters, env, round, rng: random, suppression: playerSuppression });
                 this.mergeRuleArtifacts({ logs, flags, statusChanges, effects }, playerOnHitRes);
 
-                logs.push({ type: 'battle', text: `[普攻] 施展基础招式，造成 ${playerDmg} 伤害`, tag: 'dmg', round, targetId: target.id, meta: { action: 'basic', skillName: '普攻', damage: playerDmg } });
+                logs.push({ type: 'battle', text: `[普攻] 施展基础招式，造成 ${playerDmg} 伤害`, tag: 'dmg', round, targetId: target.id, sourceId: 'player', meta: { action: 'basic', skillName: '普攻', damage: playerDmg } });
 
                 const mpRegen = 5;
                 if (playerMaxMp !== null) {
@@ -340,7 +341,7 @@ const CombatEngine = {
                         sum += dmg;
                         monsterHpById[t2.id] = (Number(monsterHpById[t2.id]) || 0) - dmg;
                     }
-                    if (sum > 0) logs.push({ type: 'battle', text: `鬼物出手，造成 ${sum} 伤害`, tag: 'skill', round, targetId: t2.id, meta: { action: 'ghost', damage: sum } });
+                    if (sum > 0) logs.push({ type: 'battle', text: `鬼物出手，造成 ${sum} 伤害`, tag: 'skill', round, targetId: t2.id, sourceId: 'player', meta: { action: 'ghost', damage: sum } });
                 }
             }
         }

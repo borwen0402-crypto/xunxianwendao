@@ -1273,10 +1273,19 @@ const UI = {
         skills.className = 'skill-grid'; // Apply grid layout
         
         if (GameData.skillConfig) {
-            Object.keys(GameData.skillConfig).forEach(dao => {
+            // [V2.0] Filter skills by active Dao
+            const activeDao = gameState.activeDao;
+            const keys = (activeDao && activeDao !== "随机" && activeDao !== "None" && GameData.skillConfig[activeDao]) 
+                ? [activeDao] 
+                : Object.keys(GameData.skillConfig);
+
+            keys.forEach(dao => {
                 GameData.skillConfig[dao].forEach(skill => {
                     const li = document.createElement('li');
                     li.className = 'skill-card';
+                    
+                    // [V2.0] Add tooltip
+                    li.title = `【${skill.name}】\n${skill.desc || skill.text || "暂无描述"}`;
                     
                     // Icon generation based on description/text
                     const text = (skill.text || skill.name) + (skill.desc || "");
@@ -1667,17 +1676,33 @@ const UI = {
         const div = document.createElement('div');
         let decorated = msg;
         const combat = typeof gameState !== 'undefined' ? gameState.combat : null;
-        if (entry && combat && Array.isArray(combat.monsters)) {
-            const targetId = typeof entry.targetId === 'string' ? entry.targetId : null;
+        
+        // [V2.0] Improved log prefix logic
+        if (entry) {
             const sourceId = typeof entry.sourceId === 'string' ? entry.sourceId : null;
-            if (targetId) {
+            const targetId = typeof entry.targetId === 'string' ? entry.targetId : null;
+            let sourceName = null;
+
+            if (sourceId === 'player') {
+                sourceName = gameState.username || "你";
+            } else if (sourceId) {
+                const s = combat && Array.isArray(combat.monsters) ? combat.monsters.find(m => m && m.id === sourceId) : null;
+                if (s && s.name) sourceName = s.name;
+            } else if (targetId && combat && Array.isArray(combat.monsters)) {
+                // Fallback: If target is monster and source is missing, assume player source
+                const t = combat.monsters.find(m => m && m.id === targetId);
+                if (t) sourceName = gameState.username || "你";
+            }
+
+            if (sourceName) {
+                decorated = `[${sourceName}] ${decorated}`;
+            } else if (targetId && combat && Array.isArray(combat.monsters)) {
+                // Legacy fallback (should happen less now)
                 const t = combat.monsters.find(m => m && m.id === targetId);
                 if (t && t.name) decorated = `(${t.name}) ${decorated}`;
-            } else if (sourceId) {
-                const s = combat.monsters.find(m => m && m.id === sourceId);
-                if (s && s.name) decorated = `(${s.name}) ${decorated}`;
             }
         }
+
         const meta = entry && entry.meta && typeof entry.meta === 'object' ? entry.meta : null;
         if (meta && typeof meta.chainId === 'string') {
             const step = (typeof meta.step === 'number' || typeof meta.step === 'string') ? meta.step : '';
