@@ -409,32 +409,35 @@ function initEventListeners() {
     if (btnLogout) btnLogout.addEventListener('click', handleLogout);
 
     const btnBetaBoost = document.getElementById('btn-beta-boost');
-    if (btnBetaBoost) {
-        btnBetaBoost.addEventListener('click', () => {
-            if (typeof gameState !== 'undefined') {
-                gameState.maxHp = 99999;
-                gameState.hp = gameState.maxHp;
-                gameState.maxMp = 99999;
-                gameState.mp = gameState.maxMp;
-                gameState.atk = 5000;
-                gameState.matk = 5000;
-                gameState.speed = 50;
-                
-                // Give some items
-                if (!gameState.inventory) gameState.inventory = {};
-                gameState.inventory['息灾符'] = (gameState.inventory['息灾符'] || 0) + 10;
-                gameState.inventory['天罡破煞符'] = (gameState.inventory['天罡破煞符'] || 0) + 10;
-                gameState.inventory['定心丹'] = (gameState.inventory['定心丹'] || 0) + 10;
+    const btnBetaBoostLeft = document.getElementById('btn-beta-boost-left');
+    
+    const handleBetaBoost = () => {
+        if (typeof gameState !== 'undefined') {
+            gameState.maxHp = 99999;
+            gameState.hp = gameState.maxHp;
+            gameState.maxMp = 99999;
+            gameState.mp = gameState.maxMp;
+            gameState.atk = 5000;
+            gameState.matk = 5000;
+            gameState.speed = 50;
+            
+            // Give some items
+            if (!gameState.inventory) gameState.inventory = {};
+            gameState.inventory['息灾符'] = (gameState.inventory['息灾符'] || 0) + 10;
+            gameState.inventory['天罡破煞符'] = (gameState.inventory['天罡破煞符'] || 0) + 10;
+            gameState.inventory['定心丹'] = (gameState.inventory['定心丹'] || 0) + 10;
 
-                UI.addLog('【内测金手指】已开启！数值大幅增强，获得强力符箓！', 'sys');
-                UI.renderLeftPanel();
-                UI.renderInventory();
-                
-                // Alert user
-                alert('内测福利已发放！\n生命/法力 -> 99999\n双攻 -> 5000\n速度 -> 50\n并获得若干符箓。');
-            }
-        });
-    }
+            UI.addLog('【内测金手指】已开启！数值大幅增强，获得强力符箓！', 'sys');
+            UI.renderLeftPanel();
+            UI.renderInventory();
+            
+            // Alert user
+            alert('内测福利已发放！\n生命/法力 -> 99999\n双攻 -> 5000\n速度 -> 50\n并获得若干符箓。');
+        }
+    };
+
+    if (btnBetaBoost) btnBetaBoost.addEventListener('click', handleBetaBoost);
+    if (btnBetaBoostLeft) btnBetaBoostLeft.addEventListener('click', handleBetaBoost);
 
     const btnReset = document.getElementById('btn-reset-save');
     if (btnReset) btnReset.addEventListener('click', handleResetSave);
