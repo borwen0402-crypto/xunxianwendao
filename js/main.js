@@ -429,6 +429,9 @@ function initEventListeners() {
     const openStatsModifier = () => {
         if (!modModal || typeof gameState === 'undefined') return;
         
+        console.log("Opening stats modifier modal");
+        if (typeof UI !== 'undefined' && UI.addLog) UI.addLog("打开数值修改器面板", "sys");
+
         // Populate inputs with current values
         if (inputMaxHp) inputMaxHp.value = gameState.maxHp || 100;
         if (inputMaxMp) inputMaxMp.value = gameState.maxMp || 50;
