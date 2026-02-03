@@ -278,6 +278,16 @@ function initEventListeners() {
         if (modal) modal.classList.add('hidden');
     });
 
+    // Talisman Guide
+    const navTalismanGuide = document.getElementById('nav-talisman-guide');
+    const btnCloseTalismanGuide = document.getElementById('btn-close-talisman-guide');
+    
+    if (navTalismanGuide) navTalismanGuide.addEventListener('click', () => UI.showTalismanGuide());
+    if (btnCloseTalismanGuide) btnCloseTalismanGuide.addEventListener('click', () => {
+        const modal = document.getElementById('talisman-guide-modal');
+        if (modal) modal.classList.add('hidden');
+    });
+
     // Log Toggle
     const btnLogToggle = document.getElementById('btn-toggle-log');
     const logContainer = document.getElementById('log-container');

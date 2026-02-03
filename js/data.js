@@ -40,67 +40,174 @@ const GameData = {
 
     // 1. 地图配置
     mapConfig: {
-        "抗龙村": {
-            name: "抗龙村",
-            desc: "凡俗村庄，夜晚偶有异声",
-            env: "凡俗",
-            neighbors: ["小义屯"],
-            monsters: [],
-            npc: ["普通老人"]
-        },
         "小义屯": {
+            id: "小义屯",
             name: "小义屯",
-            desc: "荒废义庄旁的小村落，阴气未散",
+            desc: "义庄旁的小村落，阴气未散。",
             env: "阴气",
-            neighbors: ["抗龙村", "旧宗遗址"],
-            monsters: ["阴魂", "走尸"],
-            drops: ["修为", "阴气残渣", "破损符纸", "回气散", "护脉散", "息灾符", "定心丹"],
+            world: "yang",
+            neighbors: ["抗龙村", "大龙县", "思桥"],
+            monsterPool: ["阴魂", "走尸"],
+            maxMonsters: 2,
+            drops: ["阴气残渣", "破损符纸", "回气散", "护脉散", "息灾符", "定心丹", "通阴符"],
             dangerLevel: 1
         },
-        "旧宗遗址": {
-            name: "旧宗遗址",
-            desc: "旧宗门残垣断壁，失败者的遗物仍在风里作响",
-            env: "遗址",
-            neighbors: ["小义屯", "灵脉浅层"],
-            monsters: ["阴魂", "走尸"],
-            drops: ["阴气残渣", "破损符纸", "护脉散", "定心丹", "息灾符"],
+        "抗龙村": {
+            id: "抗龙村",
+            name: "抗龙村",
+            desc: "凡俗村庄，夜晚偶有异声。",
+            env: "凡俗",
+            world: "yang",
+            neighbors: ["小义屯", "大龙县"],
+            monsterPool: [],
+            npc: ["普通老人"],
+            dangerLevel: 1
+        },
+        "大龙县": {
+            id: "大龙县",
+            name: "大龙县",
+            desc: "县城气机繁杂，人心比风更急。",
+            env: "县城",
+            world: "yang",
+            neighbors: ["抗龙村", "小义屯", "连城山", "思桥", "引凤镇"],
+            monsterPool: ["怨尸"],
+            maxMonsters: 1,
+            drops: ["回气散", "护脉散", "定心丹", "息灾符"],
             dangerLevel: 2
         },
-        "灵脉浅层": {
-            name: "灵脉浅层",
-            desc: "浅层灵脉起伏不定，灵气来得快，也来得烈",
-            env: "灵脉",
-            neighbors: ["旧宗遗址", "血祭残坛"],
-            monsters: ["走尸", "怨灵"],
-            drops: ["回气散", "定心丹", "息灾符", "护脉散", "阴气残渣"],
+        "连城山": {
+            id: "连城山",
+            name: "连城山",
+            desc: "山风阴冷，铃声似远似近。",
+            env: "山林",
+            world: "yang",
+            neighbors: ["大龙县", "古桥", "古坟地"],
+            monsterPool: ["山鬼", "怨尸"],
+            maxMonsters: 2,
+            drops: ["定心丹", "息灾符", "五行封印符", "乾坤挪移符"],
             dangerLevel: 3
         },
-        "血祭残坛": {
-            name: "血祭残坛",
-            desc: "禁术余留的残坛仍在渗息，像一口没封好的井",
-            env: "血祭",
-            neighbors: ["灵脉浅层", "死镇"],
-            monsters: ["凶尸", "怨灵"],
-            drops: ["怨气结晶", "尸丹", "息灾符", "定心丹", "护脉散"],
+        "古桥": {
+            id: "古桥",
+            name: "古桥",
+            desc: "旧桥横跨水面，水声像在数你的步子。",
+            env: "水域",
+            world: "yang",
+            neighbors: ["连城山", "思桥"],
+            monsterPool: ["浮尸", "水鬼"],
+            maxMonsters: 2,
+            drops: ["回气散", "天眼通明符", "风火遁形符"],
+            dangerLevel: 2
+        },
+        "古坟地": {
+            id: "古坟地",
+            name: "古坟地",
+            desc: "古坟成群，土里似乎有旧誓在呼吸。",
+            env: "坟地",
+            world: "yang",
+            neighbors: ["连城山"],
+            monsterPool: ["血尸", "怨尸"],
+            maxMonsters: 2,
+            drops: ["怨气结晶", "尸丹", "天罡破煞符", "金光护体符"],
             dangerLevel: 4
         },
-        "死镇": {
-            name: "死镇",
-            desc: "瘟疫灭绝之地，死气凝结",
-            env: "死寂",
-            neighbors: ["血祭残坛"],
-            monsters: ["凶尸", "怨灵"],
-            drops: ["怨气结晶", "尸丹", "定心丹", "息灾符"],
+        "思桥": {
+            id: "思桥",
+            name: "思桥",
+            desc: "桥下水暗，像有人在替你记路。",
+            env: "水域",
+            world: "yang",
+            neighbors: ["小义屯", "大龙县", "古桥"],
+            crossLayerMap: "阴间·思桥下层（运魂之河）",
+            monsterPool: ["浮尸", "水鬼"],
+            maxMonsters: 2,
+            drops: ["天眼通明符", "紫微星辰符", "通阴符"],
+            dangerLevel: 2
+        },
+        "引凤镇": {
+            id: "引凤镇",
+            name: "引凤镇",
+            desc: "镇上香火未断，夜里却多了些不该有的脚印。",
+            env: "集镇",
+            world: "yang",
+            neighbors: ["大龙县", "血云棺地宫"],
+            monsterPool: ["怨尸", "血尸"],
+            maxMonsters: 2,
+            drops: ["紫霞雷鸣符", "万鬼辟易符", "五鬼搬运符"],
             dangerLevel: 5
+        },
+        "血云棺地宫": {
+            id: "血云棺地宫",
+            name: "血云棺地宫",
+            desc: "血云压顶，棺中有王。",
+            env: "地宫",
+            world: "yang",
+            neighbors: ["引凤镇"],
+            monsterPool: ["鬼王"],
+            maxMonsters: 1,
+            drops: ["九转还魂符", "乾坤挪移符", "万鬼辟易符"],
+            dangerLevel: 6
+        },
+
+        "阴间·思桥下层（运魂之河）": {
+            id: "阴间·思桥下层（运魂之河）",
+            name: "阴间·思桥下层（运魂之河）",
+            desc: "运魂之河无声流淌，灯火不照人影。",
+            env: "阴界",
+            world: "yin",
+            locked: true,
+            neighbors: ["阴间·城隍府"],
+            crossLayerMap: "思桥",
+            monsterPool: ["阴魂", "浮尸", "水鬼"],
+            dangerLevel: 3
+        },
+        "阴间·城隍府": {
+            id: "阴间·城隍府",
+            name: "阴间·城隍府",
+            desc: "官印森严，阴司旧规未改。",
+            env: "阴界",
+            world: "yin",
+            locked: true,
+            neighbors: ["阴间·思桥下层（运魂之河）", "阴兵营"],
+            monsterPool: ["阴魂", "走尸", "怨尸"],
+            dangerLevel: 4
+        },
+        "阴兵营": {
+            id: "阴兵营",
+            name: "阴兵营",
+            desc: "甲叶无声，兵影列阵。",
+            env: "阴界",
+            world: "yin",
+            locked: true,
+            neighbors: ["阴间·城隍府", "阴司审判殿（未开放）"],
+            monsterPool: ["阴兵", "鬼将"],
+            dangerLevel: 5
+        },
+        "阴司审判殿（未开放）": {
+            id: "阴司审判殿（未开放）",
+            name: "阴司审判殿（未开放）",
+            desc: "殿门未开，判词先落。",
+            env: "阴界",
+            world: "yin",
+            locked: true,
+            neighbors: ["阴兵营"],
+            monsterPool: [],
+            dangerLevel: 6
         }
     },
 
     // 2. 怪物配置 (V1.5 新增)
     monsters: {
-        "阴魂": { level: 1, hp: 60, maxHp: 60, mp: 0, atk: 8, exp: 5, tags: ["spirit"] },
-        "走尸": { level: 2, hp: 100, maxHp: 100, mp: 0, atk: 12, exp: 8 },
-        "凶尸": { level: 5, hp: 300, maxHp: 300, mp: 0, atk: 25, exp: 20 },
-        "怨灵": { level: 6, hp: 250, maxHp: 250, mp: 50, atk: 30, exp: 25, tags: ["spirit"] }
+        "阴魂": { level: 1, hp: 120, maxHp: 120, mp: 0, atk: 18, def: 2, speed: 12, exp: 8, tags: ["spirit", "yin", "ghost"], skills: ["阴气侵体", "魂触"] },
+        "走尸": { level: 2, hp: 260, maxHp: 260, mp: 0, atk: 28, def: 8, speed: 6, exp: 18, tags: ["yin", "corpse", "elite", "undying_once"] },
+        "浮尸": { level: 1, hp: 200, maxHp: 200, mp: 0, atk: 22, def: 3, speed: 7, exp: 12, tags: ["yin", "corpse", "water"], skills: ["缠足"] },
+        "水鬼": { level: 2, hp: 220, maxHp: 220, mp: 0, atk: 32, def: 4, speed: 10, exp: 16, tags: ["yin", "ghost", "water"], skills: ["溺魂"] },
+        "山鬼": { level: 3, hp: 900, maxHp: 900, mp: 0, atk: 95, def: 18, speed: 10, exp: 60, tags: ["yin", "ghost", "elite", "chanter"], skills: ["魂兽召唤", "冰刃", "山鬼吟唱"] },
+        "魂兽": { level: 2, hp: 200, maxHp: 200, mp: 0, atk: 40, def: 6, speed: 12, exp: 10, tags: ["yin", "beast", "summon"] },
+        "吴正华": { level: 4, hp: 1100, maxHp: 1100, mp: 0, atk: 140, def: 22, speed: 14, exp: 80, tags: ["human", "thunder", "elite"], skills: ["九天雷亟", "全真借法·雷咒", "灭神"] },
+        "血尸": { level: 4, hp: 1100, maxHp: 1100, mp: 0, atk: 90, def: 22, speed: 8, exp: 70, tags: ["yin", "corpse", "elite"], skills: ["血污撕咬"] },
+        "怨尸": { level: 3, hp: 600, maxHp: 600, mp: 0, atk: 50, def: 12, speed: 9, exp: 45, tags: ["yin", "corpse"], skills: ["怨缠"] },
+        "鬼王": { level: 6, hp: 4800, maxHp: 4800, mp: 0, atk: 320, def: 40, speed: 12, exp: 260, tags: ["yin", "ghost", "boss", "chanter"], skills: ["万鬼朝宗", "血祭", "鬼域展开"] }
     },
 
     // 3. 更新公告 (V1.9 新增)
@@ -203,7 +310,23 @@ const GameData = {
         "护脉散": { hp: 10, maxHpDelta: 10, desc: "经脉稍稳，突破时不易走偏", setFlags: { bt_success_bonus: "+10" } },
         "息灾符": { mp: 10, desc: "将余波提前封住，避免债务催讨", setFlags: { bt_debt_due: false, bt_debt_due_level: 0 } },
         "定心丹": { mp: 15, desc: "心念更清明，守心更易落点", setFlags: { bt_method: "celestial" }, mfStrainDelta: -1 },
-        "洗髓丹": { desc: "逆转经脉，重塑根骨。服用后可重置所有已分配的属性点。", type: "consumable", effect: "respec" }
+        "洗髓丹": { desc: "逆转经脉，重塑根骨。服用后可重置所有已分配的属性点。", type: "consumable", effect: "respec" },
+
+        "天罡破煞符": { type: "talisman", grade: "黄", reqLevel: "修士", mpCost: 20, cooldown: { kind: "battle", rounds: 3 }, desc: "对鬼物造成 160% 光伤，并驱散 1 个负面状态。", talisman: { kind: "nuke", element: "light", vs: "ghost", mult: 1.6, dispel: 1 } },
+        "金光护体符": { type: "talisman", grade: "黄", reqLevel: "修士", mpCost: 20, cooldown: { kind: "battle", rounds: 3 }, desc: "减伤 40%，阴伤额外 -20%，持续 3 回合。", talisman: { kind: "shield", duration: 3, takenMult: 0.6, yinTakenMult: 0.8 } },
+        "紫微星辰符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "world", oncePerMap: true }, desc: "本次修行 EXP +25%，突破成功率 +5%。", talisman: { kind: "cultivation_boost", expMult: 1.25, setFlags: { bt_success_bonus: "+5" } } },
+        "九转还魂符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", oncePerBattle: true }, desc: "战斗中濒死时以 1 HP 复活，并免疫 1 回合（每场仅 1 次）。", talisman: { kind: "revive", oncePerBattle: true, hp: 1, immune: 1 } },
+        "风火遁形符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "battle", rounds: 3 }, desc: "立即脱离战斗，免疫追击；下次战斗伤害 -10%。", talisman: { kind: "escape", setFlags: { next_battle_damage_malus: 0.1 } } },
+        "万鬼辟易符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "对鬼物全体造成 150% 光伤，50% 概率恐惧 1 回合。", talisman: { kind: "aoe", element: "light", vs: "ghost", mult: 1.5, fearChance: 0.5, fearDuration: 1 } },
+        "天眼通明符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "world", oncePerMap: true }, desc: "地图事件提前预览 1 步，隐藏事件发现率 +30%。", talisman: { kind: "explore", previewSteps: 1, hiddenChanceBonus: 0.3 } },
+        "五行封印符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "battle", rounds: 3 }, desc: "封印目标技能 2 回合（Boss 1 回合）。", talisman: { kind: "seal", duration: 2, bossDuration: 1 } },
+        "乾坤挪移符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "重排敌我站位，并打断吟唱。", talisman: { kind: "interrupt" } },
+        "紫霞雷鸣符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "全体 140% 雷伤；对鬼物额外 +30%。", talisman: { kind: "aoe", element: "thunder", mult: 1.4, vs: "ghost", bonusMult: 0.3 } },
+        "通阴符": { type: "talisman", grade: "黄", reqLevel: "修士", mpCost: 20, cooldown: { kind: "world", oncePerMap: true }, desc: "打开阴间地图；鬼道感悟 +5%。", talisman: { kind: "unlock_yin", setFlags: { ghost_insight_bonus: 0.05 } } },
+        "封魂符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "battle", rounds: 3 }, desc: "封印目标 2 回合；对强敌成功率更低，可转化为材料。", talisman: { kind: "seal_chance", normal: 0.7, elite: 0.4, boss: 0.15, duration: 2 } },
+        "五鬼搬运符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "world", oncePerMap: true }, desc: "掉落 +25%，并可偷取一次奖励。", talisman: { kind: "loot_boost", dropMult: 1.25, stealOnce: true } },
+        "朱雀火凤符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "造成 130% 火伤，并施加灼烧 2 回合（每回合损失 5% HP）。", talisman: { kind: "dot", element: "fire", mult: 1.3, dot: { id: "burn", duration: 2, hpPct: 0.05 } } },
+        "玄武水渊符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "造成 130% 水伤，并获得减伤 +30%（2 回合）。", talisman: { kind: "strike_and_shield", element: "water", mult: 1.3, duration: 2, takenMult: 0.7 } }
     },
 
     skillConfig: {},
@@ -227,30 +350,38 @@ const GameData = {
             "纸钱在路边翻滚，像有人刚走过又折返。",
             "你闻到淡淡的香灰味，回头却只见雾。"
         ],
-        "遗址": [
-            "断柱斜插在荒草里，像一截折断的誓言。",
-            "残砖上还留着旧阵纹，灵光早已熄灭。",
-            "你在碎瓦间捡起半片符纸，边缘像被泪水浸过。"
+        "县城": [
+            "城门开合，人声如潮，却无人知你是谁。",
+            "香火与油烟混在风里，杂念也跟着起伏。"
         ],
-        "灵脉": [
-            "灵气一阵一阵涌上来，像潮水拍在经脉里。",
-            "你吸进的每一口气都太“满”，让人心悸。",
-            "地面隐约发热，仿佛有脉搏在地下跳动。"
+        "山林": [
+            "风铃声忽远忽近，像有人在林子里替你点名。",
+            "山气阴冷，草叶上挂着不该有的湿意。"
         ],
-        "血祭": [
-            "残坛裂纹里渗出暗红的痕迹，像从未干透。",
-            "空气里有一种腥甜味，像祭词还在回音里发酵。",
-            "你不自觉放慢脚步，仿佛怕惊动什么沉睡的债。"
+        "水域": [
+            "水面浮起一圈圈涟漪，像有人在水下缓慢呼吸。",
+            "桥影倒扣，水声像在数你的心跳。"
         ],
-        "死寂": [
-            "你感到某种目光在暗处注视。",
-            "街道空得不合常理，连风都绕开这里。",
-            "你踩过一滩水，却没听见溅响。"
+        "坟地": [
+            "土里有旧誓的味道，像沉了很久的香灰。",
+            "坟头草动了一下，又像从未动过。"
+        ],
+        "集镇": [
+            "镇口的灯一直亮着，却照不清来人去处。",
+            "你听见巷子尽头有脚步，却看不见人。"
+        ],
+        "地宫": [
+            "墙里渗出冷意，像棺木的呼吸贴在耳后。",
+            "火光一跳，影子就多了一层。"
+        ],
+        "阴界": [
+            "灯火不照人影，你的脚步声像借来的。",
+            "河风吹过，带着纸钱与判词的味道。"
         ]
     },
     worldTendencyLogs: {
         omen: [
-            { min: 1, max: 2, logs: ["天色有些不对劲，云层压得很低。", "空气中弥漫着淡淡的铁锈味。"] },
+            { min: 1, max: 2, logs: ["天色有些不对劲，云层压得很低。", "空气中有淡淡的铁锈味。"] },
             { min: 3, max: 5, logs: ["天边隐约透出暗红色的光，像是在渗血。", "你感觉周围的阴影似乎有了自己的意识，在你视线死角蠕动。"] },
             { min: -5, max: -1, logs: ["今日云淡风轻，令人心旷神怡。", "瑞气implicitly，似乎有什么好事发生。"] }
         ],
@@ -293,7 +424,7 @@ const GameData = {
                     id: "yinyang",
                     text: "入阴阳道",
                     tooltip: "【阴阳道】\n平衡流转，逆乱阴阳。\n核心：切换阴/阳状态，触发连击与护盾。\n侧重：全能型法师（控制/恢复/封印/转属），适应性最强。",
-                    log: "你把世界分成两半，又把两半重新揉成一体。你开始看见“变化”。",
+                    log: "你把世界分成两半，又把两半重新揉成一体。你开始seeing“变化”。",
                     meta: { story: { setFlags: { daoType: "阴阳道", daoLocked: true }, nextEventId: "event_cycle_complete_01", delayTicks: 0 } }
                 },
                 {
@@ -350,7 +481,7 @@ const GameData = {
             desc: "路边有一块残破的石碑，上面刻着模糊的符文。",
             meta: { tendencyTags: ["order", "omen"] },
             options: [
-                { id: "touch", text: "抚摸石碑", log: "你感受到了一丝微弱的灵力波动。" },
+                { id: "touch", text: "抚摸石碑", log: "你感受了丝丝微弱的灵力波动。" },
                 { id: "ignore", text: "无视", log: "你没有理会石碑，继续前行。" }
             ]
         },

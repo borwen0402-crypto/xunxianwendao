@@ -113,6 +113,61 @@ const Rules = {
         return { delta: { maxHpDelta: 100, maxMpDelta: 50 }, success: true };
     }),
 
+    combatStatusRule: defineRule({
+        inputs: ['phase', 'player', 'monster', 'monsters', 'env', 'round', 'rng'],
+        outputs: ['takenMult', 'damageMult', 'mpCostMult', 'logs', 'flags'],
+        guarantees: ['noSideEffect']
+    }, function(input) {
+        const phase = input && typeof input.phase === 'string' ? input.phase : '';
+        const player = input && input.player && typeof input.player === 'object' ? input.player : {};
+        const monster = input && input.monster && typeof input.monster === 'object' ? input.monster : null;
+        const monsters = Array.isArray(input && input.monsters) ? input.monsters : [];
+
+        const playerStatuses = Array.isArray(player.statuses) ? player.statuses : [];
+        const hasStatus = (id) => playerStatuses.some(s => s && typeof s === 'object' && s.id === id);
+
+        const domainActive = monsters.some(m => m && Array.isArray(m.statuses) && m.statuses.some(s => s && typeof s === 'object' && s.id === 'ghost_domain'));
+        const monsterIsYin = monster && Array.isArray(monster.tags) && (monster.tags.includes('yin') || monster.tags.includes('ghost'));
+        const monsterSealed = monster && Array.isArray(monster.statuses) && monster.statuses.some(s => s && typeof s === 'object' && s.id === 'sealed');
+
+        let takenMult = 1;
+        let damageMult = 1;
+        let mpCostMult = 1;
+
+        if (phase === 'monster') {
+            if (hasStatus('immune')) takenMult *= 0;
+            if (hasStatus('talisman_shield')) {
+                takenMult *= 0.6;
+                if (hasStatus('talisman_shield_yin') && monsterIsYin) takenMult *= 0.8;
+            }
+            if (monsterSealed) takenMult *= 0.85;
+            if (domainActive && monsterIsYin) takenMult *= 1.25;
+        }
+
+        if (phase === 'player') {
+            if (hasStatus('fear')) damageMult *= 0.85;
+        }
+
+        if (takenMult === 1 && damageMult === 1 && mpCostMult === 1) return null;
+        return { takenMult, damageMult, mpCostMult };
+    }),
+
+    combatAiRule: defineRule({
+        inputs: ['phase', 'player', 'monster', 'monsters', 'env', 'round', 'rng'],
+        outputs: ['action', 'targetId'],
+        guarantees: ['noSideEffect', 'deterministic']
+    }, function() {
+        return null;
+    }),
+
+    combatSkillRule: defineRule({
+        inputs: ['phase', 'player', 'skill', 'target', 'monsters', 'env', 'round', 'rng'],
+        outputs: ['mpCostMult', 'flatDamage', 'damageMult', 'logs', 'flags'],
+        guarantees: ['noSideEffect']
+    }, function() {
+        return null;
+    }),
+
     storyTick: defineRule({
         inputs: ['story', 'tick', 'location'],
         outputs: ['trigger', 'eventId', 'storyUpdate'],
@@ -378,14 +433,14 @@ const Rules = {
             const p = { hp: gameState.hp, mp: gameState.mp, maxHp: gameState.maxHp, maxMp: gameState.maxMp, atk: gameState.atk, matk: gameState.matk, realm: gameState.realm, subRealm: gameState.subRealm, activeDao: gameState.activeDao, daoType: gameState.daoType, daoBranch: gameState.daoBranch, ghosts: Array.isArray(gameState.ghosts) ? gameState.ghosts : [], soulUrn: gameState.soulUrn && typeof gameState.soulUrn === 'object' ? gameState.soulUrn : null, statuses: [] };
             const mapId = map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map.name || '未知');
             const yinYang = (gameState.mapStates && gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object') ? (Number(gameState.mapStates[mapId].yinYang) || 0) : 0;
-            const env = { mapId, difficulty: Number.isFinite(Number(map.dangerLevel)) ? Number(map.dangerLevel) : 1, yinYang };
+            const env = { mapId, difficulty: Number.isFinite(Number(map.dangerLevel)) ? Number(map.dangerLevel) : 1, yinYang, world: (map && typeof map.world === 'string') ? map.world : 'yang' };
             gameState.combat = CombatEngine.createCombat(p, monsters, env);
         } else {
             gameState.combat = {
                 round: 0,
                 player: { hp: gameState.hp, mp: gameState.mp, maxHp: gameState.maxHp, maxMp: gameState.maxMp, atk: gameState.atk, matk: gameState.matk, realm: gameState.realm, subRealm: gameState.subRealm, activeDao: gameState.activeDao, daoType: gameState.daoType, daoBranch: gameState.daoBranch, ghosts: Array.isArray(gameState.ghosts) ? gameState.ghosts : [], soulUrn: gameState.soulUrn && typeof gameState.soulUrn === 'object' ? gameState.soulUrn : null, statuses: [] },
                 monsters: monsters,
-                env: { mapId: map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map.name || '未知'), difficulty: Number.isFinite(Number(map.dangerLevel)) ? Number(map.dangerLevel) : 1, yinYang: 0 },
+                env: { mapId: map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map.name || '未知'), difficulty: Number.isFinite(Number(map.dangerLevel)) ? Number(map.dangerLevel) : 1, yinYang: 0, world: (map && typeof map.world === 'string') ? map.world : 'yang' },
                 logs: [],
                 activeTargetId: monsters[0] ? monsters[0].id : null
             };
@@ -448,6 +503,32 @@ const Rules = {
                 // [V1.9.0 Fix] 确保掉落物写入背包
                 if (!gameState.inventory) gameState.inventory = {};
                 gameState.inventory[rewardRes.drop] = (gameState.inventory[rewardRes.drop] || 0) + 1;
+            }
+            const sf2 = (gameState.story && typeof gameState.story === 'object' && gameState.story.flags && typeof gameState.story.flags === 'object')
+                ? gameState.story.flags
+                : {};
+            const lootMult = Number(sf2.loot_boost_mult) || 1;
+            const stealOnce = sf2.loot_steal_once === true;
+            const extraDropChance = lootMult > 1 ? Math.max(0, Math.min(1, lootMult - 1)) : 0;
+            let extraDrop = null;
+            if (lootMult > 1 && gameState.currentMap && Array.isArray(gameState.currentMap.drops) && gameState.currentMap.drops.length) {
+                if (!rewardRes || !rewardRes.drop) {
+                    if (rewardRng() < extraDropChance) {
+                        extraDrop = gameState.currentMap.drops[Math.floor(rewardRng() * gameState.currentMap.drops.length)] || null;
+                    }
+                } else if (stealOnce) {
+                    extraDrop = rewardRes.drop;
+                }
+            } else if (stealOnce && rewardRes && rewardRes.drop) {
+                extraDrop = rewardRes.drop;
+            }
+            if (extraDrop) {
+                if (!gameState.inventory) gameState.inventory = {};
+                gameState.inventory[extraDrop] = (gameState.inventory[extraDrop] || 0) + 1;
+                dropMsg += `，额外获得 [${extraDrop}]`;
+            }
+            if ((lootMult > 1 || stealOnce) && typeof gameState.applyStoryUpdate === 'function') {
+                gameState.applyStoryUpdate({ setFlags: { loot_boost_mult: 1, loot_steal_once: false } }, { source: 'Rules.victoryRewards', rule: 'loot_boost', deltaKey: typeof rewardDeltaKey === 'string' ? rewardDeltaKey : undefined });
             }
 
             const label = snapshotMonsters.length <= 1
@@ -665,15 +746,39 @@ const Logic = {
         // 简单的拓扑检查 (UI已经做过禁用处理，这里做二次校验)
         if (gameState.currentMap) {
             const isNeighbor = gameState.currentMap.neighbors.includes(mapName);
-            if (gameState.currentMap.name !== mapName && !isNeighbor) {
+            const isCrossLayer = gameState.currentMap.crossLayerMap === mapName;
+            if (gameState.currentMap.name !== mapName && !isNeighbor && !isCrossLayer) {
                 console.warn("Cheat warning: attempting to jump to non-neighbor map.");
                 return;
             }
         }
 
+        const mapWorld = (map && typeof map.world === 'string') ? map.world : 'yang';
+        const isYinMap = mapWorld === 'yin' || (typeof mapName === 'string' && mapName.startsWith('阴间'));
         if (map.locked) {
-            UI.addLog(`【${mapName}】被神秘力量封锁，无法进入。`, 'sys');
-            return;
+            if (isYinMap && mapName === '阴间·思桥下层（运魂之河）') {
+                const isYinYangDao = gameState.activeDao === '阴阳道';
+                const inv = gameState.inventory && typeof gameState.inventory === 'object' ? gameState.inventory : (gameState.inventory = {});
+                const hasToken = (Number(inv['通阴符']) || 0) > 0;
+                const sf = (gameState.story && gameState.story.flags && typeof gameState.story.flags === 'object') ? gameState.story.flags : {};
+                const hasReady = sf.yin_pass_ready === true;
+                if (!isYinYangDao && !hasToken && !hasReady) {
+                    UI.addLog(`进入阴间需要【阴阳道】或消耗【通阴符×1】。`, 'sys');
+                    return;
+                }
+                if (!isYinYangDao && hasReady) {
+                    if (typeof gameState.applyStoryUpdate === 'function') gameState.applyStoryUpdate({ setFlags: { yin_pass_ready: false } }, { source: 'Move', rule: 'yin_pass_ready' });
+                    UI.addLog(`通阴符的余烬未散，你循着阴风入了桥下。`, 'sys');
+                } else if (!isYinYangDao) {
+                    inv['通阴符'] = (Number(inv['通阴符']) || 0) - 1;
+                    if (inv['通阴符'] <= 0) delete inv['通阴符'];
+                    UI.addLog(`你燃起一张【通阴符】，阴风裹住你的影子。`, 'sys');
+                    if (typeof UI !== 'undefined' && UI && typeof UI.renderInventory === 'function') UI.renderInventory();
+                }
+            } else {
+                UI.addLog(`【${mapName}】被神秘力量封锁，无法进入。`, 'sys');
+                return;
+            }
         }
 
         const moveAction = (typeof gameState !== 'undefined' && gameState && typeof gameState.recordAction === 'function')
@@ -707,7 +812,9 @@ const Logic = {
         }
         
         // 自动战斗测试检查
-        if (gameState.currentMap.monsters.length === 0 && !gameState.currentMap.npc) {
+        const hasMonsters = (gameState.currentMap.monsterPool && gameState.currentMap.monsterPool.length > 0) || 
+                          (gameState.currentMap.monsters && gameState.currentMap.monsters.length > 0);
+        if (!hasMonsters && !gameState.currentMap.npc) {
              UI.addLog("此地荒芜，无需挂机。", "sys");
              return;
         }
@@ -820,7 +927,12 @@ const Logic = {
                     return gameState.rng();
                 };
                 const res = CombatEngine.run(gameState.combat, rng, {
-                    realmRule: Rules.breakthroughAdvance,
+                    rules: {
+                        realm: Rules.breakthroughAdvance,
+                        status: Rules.combatStatusRule,
+                        ai: Rules.combatAiRule,
+                        skill: Rules.combatSkillRule
+                    },
                     trace: { deltaKey: tickDeltaKey, source: 'combat' }
                 });
 
@@ -1156,6 +1268,257 @@ const Logic = {
         if (!effect) {
             if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`【${name}】似乎无法直接使用。`, 'sys');
             return false;
+        }
+
+        if (effect.type === 'talisman') {
+            const inCombat = !!gameState.combat;
+            const mpCost = Number.isFinite(Number(effect.mpCost)) ? Math.max(0, Math.floor(Number(effect.mpCost))) : 0;
+            const cd = effect.cooldown && typeof effect.cooldown === 'object' ? effect.cooldown : {};
+            const talisman = effect.talisman && typeof effect.talisman === 'object' ? effect.talisman : {};
+
+            const mapId = (() => {
+                const m = gameState.currentMap && typeof gameState.currentMap === 'object' ? gameState.currentMap : null;
+                if (m && typeof m.id === 'string' && m.id.trim()) return m.id.trim();
+                if (m && typeof m.name === 'string' && m.name.trim()) return m.name.trim();
+                return null;
+            })();
+
+            const ensureMapState = () => {
+                if (!mapId) return null;
+                if (!gameState.mapStates || typeof gameState.mapStates !== 'object') gameState.mapStates = {};
+                const cur = (gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object') ? gameState.mapStates[mapId] : {};
+                if (!cur.talismanUsed || typeof cur.talismanUsed !== 'object') cur.talismanUsed = {};
+                gameState.mapStates[mapId] = cur;
+                return cur;
+            };
+
+            const applyCombatStatusChanges = (changes) => {
+                if (!inCombat) return;
+                if (!Array.isArray(changes) || !changes.length) return;
+                if (typeof CombatEngine !== 'undefined' && CombatEngine && typeof CombatEngine.applyStatusChanges === 'function') {
+                    gameState.combat = CombatEngine.applyStatusChanges(gameState.combat, changes);
+                }
+            };
+
+            const findCombatTarget = () => {
+                const c = gameState.combat && typeof gameState.combat === 'object' ? gameState.combat : null;
+                const list = c && Array.isArray(c.monsters) ? c.monsters : [];
+                const alive = list.filter(m => m && typeof m === 'object' && (Number(m.hp) || 0) > 0);
+                if (!alive.length) return null;
+                const tid = c && typeof c.activeTargetId === 'string' ? c.activeTargetId : null;
+                if (tid) {
+                    const t = alive.find(m => m.id === tid);
+                    if (t) return t;
+                }
+                return alive[0];
+            };
+
+            const hasPlayerStatus = (id) => {
+                const c = gameState.combat && typeof gameState.combat === 'object' ? gameState.combat : null;
+                const p = c && c.player && typeof c.player === 'object' ? c.player : null;
+                const list = p && Array.isArray(p.statuses) ? p.statuses : [];
+                return list.some(s => s && typeof s === 'object' && s.id === id);
+            };
+
+            const setPlayerStatus = (status) => applyCombatStatusChanges([{ target: 'player', op: 'refresh', status }]);
+            const removePlayerStatus = (id) => applyCombatStatusChanges([{ target: 'player', op: 'remove', status: { id } }]);
+
+            if (cd.kind === 'battle' && !inCombat) {
+                if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`【${name}】需在战斗中使用。`, 'sys');
+                return false;
+            }
+
+            if (cd.kind === 'world' && cd.oncePerMap === true) {
+                const ms = ensureMapState();
+                if (ms && ms.talismanUsed && ms.talismanUsed[name] === true) {
+                    if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`【${name}】在此地已用过一次。`, 'sys');
+                    return false;
+                }
+            }
+
+            if (cd.kind === 'battle' && Number.isFinite(Number(cd.rounds)) && cd.rounds > 0) {
+                const cdId = `cd_talisman_${name}`;
+                if (hasPlayerStatus(cdId)) {
+                    if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`【${name}】尚在冷却。`, 'sys');
+                    return false;
+                }
+            }
+
+            if (cd.kind === 'battle' && cd.oncePerBattle === true) {
+                const usedId = `used_talisman_${name}`;
+                if (hasPlayerStatus(usedId)) {
+                    if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`【${name}】本场战斗只能使用一次。`, 'sys');
+                    return false;
+                }
+            }
+
+            if (mpCost > 0 && (Number(gameState.mp) || 0) < mpCost) {
+                if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`灵力不足，无法使用【${name}】（需要 MP ${mpCost}）。`, 'sys');
+                return false;
+            }
+
+            gameState.inventory[name]--;
+            if (gameState.inventory[name] <= 0) delete gameState.inventory[name];
+
+            if (mpCost > 0) {
+                gameState.applyPlayerDelta({ playerMp: -mpCost }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                if (inCombat && gameState.combat && gameState.combat.player) gameState.combat.player.mp = gameState.mp;
+            }
+
+            if (cd.kind === 'world' && cd.oncePerMap === true) {
+                const ms = ensureMapState();
+                if (ms && ms.talismanUsed) ms.talismanUsed[name] = true;
+            }
+            if (cd.kind === 'battle' && Number.isFinite(Number(cd.rounds)) && cd.rounds > 0) {
+                const cdRounds = Math.max(1, Math.floor(Number(cd.rounds)));
+                setPlayerStatus({ id: `cd_talisman_${name}`, name: '符箓冷却', stacks: 1, duration: cdRounds });
+            }
+            if (cd.kind === 'battle' && cd.oncePerBattle === true) {
+                setPlayerStatus({ id: `used_talisman_${name}`, name: '符箓已用', stacks: 1, duration: 999 });
+            }
+
+            const power = Math.max(1, Math.floor((Number(gameState.atk) || 0) + (Number(gameState.matk) || 0)));
+
+            const applyDamageTo = (monsterId, dmg) => {
+                if (!inCombat || !monsterId) return;
+                if (typeof gameState.applyExternalEffects === 'function') {
+                    gameState.applyExternalEffects([{ source: 'player', target: { monsterId }, type: 'hp', value: -Math.max(0, Math.floor(dmg)), meta: { external: true, kind: 'talisman' } }], { source: 'Talisman', rule: name, deltaKey: deltaKey || undefined });
+                }
+            };
+
+            const logBattle = (text) => {
+                if (o.silent === true) return;
+                if (typeof UI !== 'undefined' && UI && typeof UI.renderCombatLogs === 'function') UI.renderCombatLogs([{ type: 'battle', tag: 'skill', text, sourceId: 'player', meta: { action: 'talisman', item: name, deltaKey } }]);
+                else if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(text, 'battle');
+            };
+
+            if (inCombat) {
+                if (name === '天罡破煞符') {
+                    const t = findCombatTarget();
+                    if (!t) return false;
+                    const isGhost = Array.isArray(t.tags) && t.tags.includes('ghost');
+                    const dmg = Math.floor(power * (isGhost ? 1.6 : 1));
+                    applyDamageTo(t.id, dmg);
+                    const negatives = ['fear', 'confuse', 'sealed', 'burn', 'slow'];
+                    const p = gameState.combat && gameState.combat.player ? gameState.combat.player : null;
+                    const st = p && Array.isArray(p.statuses) ? p.statuses : [];
+                    const hit = st.find(s => s && typeof s === 'object' && negatives.includes(s.id));
+                    if (hit) removePlayerStatus(hit.id);
+                    logBattle(`天罡破煞符化作一道清光，斩落 ${dmg}。`);
+                } else if (name === '金光护体符') {
+                    setPlayerStatus({ id: 'talisman_shield', name: '金光护体', stacks: 1, duration: 3 });
+                    setPlayerStatus({ id: 'talisman_shield_yin', name: '金光护体·阴', stacks: 1, duration: 3 });
+                    logBattle('金光覆体，护住周身气机。');
+                } else if (name === '九转还魂符') {
+                    setPlayerStatus({ id: 'talisman_revive', name: '九转还魂', stacks: 1, duration: 999 });
+                    logBattle('你贴上九转还魂符，气机留了一线回路。');
+                } else if (name === '风火遁形符') {
+                    if (gameState.story && typeof gameState.story === 'object' && gameState.story.flags && typeof gameState.story.flags === 'object' && typeof gameState.applyStoryUpdate === 'function') {
+                        gameState.applyStoryUpdate({ setFlags: { next_battle_damage_malus: 0.1 } }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                    }
+                    gameState.combat = null;
+                    if (o.silent !== true && typeof UI !== 'undefined' && UI && typeof UI.renderCombatUI === 'function') UI.renderCombatUI();
+                    logBattle('风火遁形符燃起，你瞬息脱战。');
+                } else if (name === '万鬼辟易符') {
+                    const c = gameState.combat;
+                    const list = c && Array.isArray(c.monsters) ? c.monsters : [];
+                    let hitCount = 0;
+                    for (let i = 0; i < list.length; i++) {
+                        const m = list[i];
+                        if (!m || typeof m !== 'object') continue;
+                        if ((Number(m.hp) || 0) <= 0) continue;
+                        const isGhost = Array.isArray(m.tags) && m.tags.includes('ghost');
+                        if (!isGhost) continue;
+                        const dmg = Math.floor(power * 1.5);
+                        applyDamageTo(m.id, dmg);
+                        hitCount++;
+                        if (gameState.rng() < 0.5) {
+                            applyCombatStatusChanges([{ target: { monsterId: m.id }, op: 'refresh', status: { id: 'fear', name: '恐惧', stacks: 1, duration: 1 } }]);
+                        }
+                    }
+                    logBattle(`万鬼辟易符照下，鬼物受创（${hitCount}）。`);
+                } else if (name === '五行封印符') {
+                    const t = findCombatTarget();
+                    if (!t) return false;
+                    const isBoss = Array.isArray(t.tags) && t.tags.includes('boss');
+                    const d = isBoss ? 1 : 2;
+                    applyCombatStatusChanges([{ target: { monsterId: t.id }, op: 'refresh', status: { id: 'sealed', name: '封印', stacks: 1, duration: d } }]);
+                    logBattle(`五行封印符落下，封住【${t.name}】（${d}回合）。`);
+                } else if (name === '乾坤挪移符') {
+                    const c = gameState.combat;
+                    const list = c && Array.isArray(c.monsters) ? c.monsters : [];
+                    for (let i = 0; i < list.length; i++) {
+                        const m = list[i];
+                        if (!m || typeof m !== 'object') continue;
+                        applyCombatStatusChanges([{ target: { monsterId: m.id }, op: 'remove', status: { id: 'shan_ghost_chant' } }]);
+                    }
+                    logBattle('乾坤挪移符撕开气机，吟唱被打断。');
+                } else if (name === '紫霞雷鸣符') {
+                    const c = gameState.combat;
+                    const list = c && Array.isArray(c.monsters) ? c.monsters : [];
+                    let total = 0;
+                    for (let i = 0; i < list.length; i++) {
+                        const m = list[i];
+                        if (!m || typeof m !== 'object') continue;
+                        if ((Number(m.hp) || 0) <= 0) continue;
+                        const isGhost = Array.isArray(m.tags) && m.tags.includes('ghost');
+                        const dmg = Math.floor(power * (isGhost ? 1.7 : 1.4));
+                        total += dmg;
+                        applyDamageTo(m.id, dmg);
+                    }
+                    logBattle(`紫霞雷鸣符落下，雷光遍地（总计 ${total}）。`);
+                } else if (name === '封魂符') {
+                    const t = findCombatTarget();
+                    if (!t) return false;
+                    const tags = Array.isArray(t.tags) ? t.tags : [];
+                    const isBoss = tags.includes('boss');
+                    const isElite = tags.includes('elite');
+                    const p = isBoss ? 0.15 : (isElite ? 0.4 : 0.7);
+                    gameState._lastRngConsumerTag = `talisman.seal#${name}`;
+                    const ok = gameState.rng() < p;
+                    if (ok) {
+                        applyCombatStatusChanges([{ target: { monsterId: t.id }, op: 'refresh', status: { id: 'sealed', name: '封魂', stacks: 1, duration: 2 } }]);
+                        logBattle(`封魂符镇下，【${t.name}】魂机受制。`);
+                    } else {
+                        logBattle(`封魂符镇下，却被【${t.name}】挣开。`);
+                    }
+                } else if (name === '朱雀火凤符') {
+                    const t = findCombatTarget();
+                    if (!t) return false;
+                    const dmg = Math.floor(power * 1.3);
+                    applyDamageTo(t.id, dmg);
+                    applyCombatStatusChanges([{ target: { monsterId: t.id }, op: 'refresh', status: { id: 'burn', name: '灼烧', stacks: 1, duration: 2, hpPct: 0.05 } }]);
+                    logBattle(`朱雀火凤符轰下，【${t.name}】受创并灼烧。`);
+                } else if (name === '玄武水渊符') {
+                    const t = findCombatTarget();
+                    if (!t) return false;
+                    const dmg = Math.floor(power * 1.3);
+                    applyDamageTo(t.id, dmg);
+                    setPlayerStatus({ id: 'talisman_shield', name: '玄武护体', stacks: 1, duration: 2 });
+                    logBattle(`玄武水渊符落下，你周身水意成盾。`);
+                } else {
+                    logBattle(`使用了【${name}】。`);
+                }
+            } else {
+                if (name === '紫微星辰符') {
+                    gameState.applyPlayerDelta({ expDelta: 25 }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                    if (typeof gameState.applyStoryUpdate === 'function') gameState.applyStoryUpdate({ setFlags: { bt_success_bonus: "+5" } }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                } else if (name === '天眼通明符') {
+                    if (typeof gameState.applyStoryUpdate === 'function') gameState.applyStoryUpdate({ setFlags: { talisman_preview_steps: 1, talisman_hidden_bonus: 0.3 } }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                } else if (name === '通阴符') {
+                    if (typeof gameState.applyStoryUpdate === 'function') gameState.applyStoryUpdate({ setFlags: { yin_pass_ready: true } }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                } else if (name === '五鬼搬运符') {
+                    if (typeof gameState.applyStoryUpdate === 'function') gameState.applyStoryUpdate({ setFlags: { loot_boost_mult: 1.25, loot_steal_once: true } }, { source: 'ItemUse', rule: name, deltaKey: deltaKey || undefined });
+                }
+                if (o.silent !== true && typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog(`使用了【${name}】，${effect.desc}`, 'sys');
+            }
+
+            if (o.silent !== true && typeof UI !== 'undefined' && UI) {
+                if (typeof UI.renderInventory === 'function') UI.renderInventory();
+                if (typeof UI.updateStatsUI === 'function') UI.updateStatsUI();
+            }
+            if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
+            return true;
         }
 
         gameState.inventory[name]--;

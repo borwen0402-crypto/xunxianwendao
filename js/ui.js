@@ -66,6 +66,72 @@ const UI = {
         modal.classList.remove('hidden');
     },
 
+    // 显示符箓图鉴
+    showTalismanGuide: function() {
+        const modal = document.getElementById('talisman-guide-modal');
+        const body = document.getElementById('talisman-guide-body');
+        if (!modal || !body) return;
+
+        // 获取符箓数据
+        const items = GameData.itemConfig || {};
+        const talismans = Object.entries(items)
+            .filter(([key, item]) => item.type === 'talisman')
+            .map(([key, item]) => ({ name: key, ...item }));
+        
+        // 排序：红 > 蓝 > 黄 (自定义权重)
+        const gradeWeight = { "红": 3, "蓝": 2, "黄": 1 };
+        talismans.sort((a, b) => {
+            const wa = gradeWeight[a.grade] || 0;
+            const wb = gradeWeight[b.grade] || 0;
+            return wb - wa;
+        });
+
+        const gradeColors = {
+            "黄": "#f1c40f",
+            "蓝": "#3498db",
+            "红": "#e74c3c"
+        };
+
+        let html = '';
+        talismans.forEach(t => {
+            const color = gradeColors[t.grade] || '#ccc';
+            const cooldownStr = t.cooldown ? (
+                t.cooldown.oncePerMap ? "每图一次" : 
+                (t.cooldown.oncePerBattle ? "每场一次" : 
+                (t.cooldown.rounds ? `${t.cooldown.rounds}回合CD` : "无限制"))
+            ) : "无限制";
+
+            html += `
+                <div class="talisman-entry" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                        <span style="font-size:1.1em; font-weight:bold; color:${color};">
+                            <span style="display:inline-block; padding:1px 4px; border:1px solid ${color}; font-size:0.7em; margin-right:5px; border-radius:2px;">${t.grade}阶</span>
+                            ${t.name}
+                        </span>
+                        <div style="text-align:right;">
+                            <span style="font-size:0.85em; color:#aaa; display:block;">消耗 ${t.mpCost} MP</span>
+                            ${t.reqLevel ? `<span style="font-size:0.85em; color:#888;">需 ${t.reqLevel}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="font-size:0.9em; color:#ccc; margin-bottom:5px;">
+                        <span style="color:#888;">[${cooldownStr}]</span> <span style="color:#aaa;">【用法】</span>${t.desc}
+                    </div>
+                    ${t.talisman && t.talisman.kind ? `
+                    <div style="font-size:0.8em; color:#666; font-family:monospace; margin-top:4px;">
+                        类型: ${t.talisman.kind} 
+                        ${t.talisman.mult ? `| 倍率: ${Math.round(t.talisman.mult*100)}%` : ''}
+                        ${t.talisman.element ? `| 属性: ${t.talisman.element}` : ''}
+                    </div>` : ''}
+                </div>
+            `;
+        });
+
+        if (html === '') html = '<div style="padding:20px; text-align:center; color:#666;">暂无符箓记录</div>';
+        
+        body.innerHTML = html;
+        modal.classList.remove('hidden');
+    },
+
     // 切换面板
     toggleLeftPanel: function() {
         const panel = document.getElementById('left-panel');
@@ -1032,33 +1098,125 @@ const UI = {
         const mapList = document.getElementById('map-list');
         mapList.innerHTML = '';
         
-        for (const key in GameData.mapConfig) {
-            const map = GameData.mapConfig[key];
+        const current = gameState.currentMap;
+        if (!current) return;
+
+        // 初始化显示状态 (默认全部显示)
+        if (typeof this.showAllMaps === 'undefined') {
+            this.showAllMaps = true;
+        }
+
+        // 控制栏
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.justifyContent = 'flex-end';
+        controls.style.marginBottom = '5px';
+        
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = this.showAllMaps ? "只看邻近" : "显示全部";
+        toggleBtn.style.fontSize = "0.8em";
+        toggleBtn.style.padding = "2px 8px";
+        toggleBtn.style.cursor = "pointer";
+        toggleBtn.onclick = () => {
+            this.showAllMaps = !this.showAllMaps;
+            this.renderMapList();
+        };
+        controls.appendChild(toggleBtn);
+        mapList.appendChild(controls);
+
+        // 地图网格
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        grid.style.gap = '10px';
+        grid.style.marginBottom = '10px';
+
+        const allMaps = Object.keys(GameData.mapConfig);
+        
+        allMaps.forEach(nid => {
+            const map = GameData.mapConfig[nid];
+            if (!map) return;
+
+            const isCurrent = current.id === nid;
+            const isNeighbor = current.neighbors && current.neighbors.includes(nid);
+            const isCrossLayer = current.crossLayerMap === nid;
+            const isReachable = isNeighbor || isCrossLayer;
+
+            // 如果不是全部显示模式，且不可到达也不是当前地图，则跳过
+            if (!this.showAllMaps && !isReachable && !isCurrent) return;
+
             const btn = document.createElement('button');
             btn.textContent = map.name;
             btn.className = "map-btn";
             
-            // 拓扑逻辑检查（仅UI显示）
-            const isCurrent = gameState.currentMap && gameState.currentMap.name === key;
-            const isNeighbor = gameState.currentMap && gameState.currentMap.neighbors.includes(key);
-            
+            // 样式处理
             if (isCurrent) {
-                btn.classList.add('active');
+                btn.classList.add('active'); // 假设 CSS 有 active 类，或者手动加样式
+                btn.style.border = "1px solid #4CAF50";
+                btn.style.color = "#4CAF50";
+                btn.disabled = true;
+            } else if (isReachable) {
+                // 可到达
+                if (isCrossLayer) {
+                    btn.textContent += " (借道)";
+                    btn.style.border = "1px solid #9b59b6"; // 紫色提示
+                }
+            } else {
+                // 不可到达
+                btn.disabled = true;
+                btn.style.opacity = "0.4";
+                btn.style.cursor = "not-allowed";
+                // btn.title = "路途遥远，需先抵达邻近区域";
             }
-
+            
             if (map.locked) {
                 btn.disabled = true;
                 btn.title = "此地封禁，不可进入";
                 btn.innerHTML += " 🔒";
-            } else if (!isCurrent && !isNeighbor) {
-                btn.disabled = true;
-                btn.title = "路途遥远，需先前往邻近区域";
-                btn.style.opacity = "0.5";
+                btn.style.opacity = "0.6";
             }
 
-            // 绑定 Logic 请求
-            btn.addEventListener('click', () => Logic.requestEnterMap(key));
-            mapList.appendChild(btn);
+            if (!btn.disabled || isReachable) {
+                btn.addEventListener('click', () => Logic.requestEnterMap(nid));
+                // 确保可到达的即使被 locked 逻辑覆盖（虽然逻辑上不应该既是邻居又被锁，或者锁了就不能进），这里 logic 会处理
+                // 如果 locked 是全局锁，那确实不能进。上面的 locked check 覆盖了 reachable。
+                // 修正：如果 locked，保持 disabled。如果没 locked 且 reachable，绑定点击。
+                if (map.locked) {
+                    btn.disabled = true;
+                } else {
+                    btn.disabled = false;
+                }
+            }
+
+            grid.appendChild(btn);
+        });
+
+        mapList.appendChild(grid);
+
+        // 2. 渲染跨界通道 (阴阳切换)
+        if (current.crossLayerMap) {
+            const targetId = current.crossLayerMap;
+            const targetMap = GameData.mapConfig[targetId];
+            if (targetMap) {
+                const layerBtn = document.createElement('button');
+                layerBtn.innerHTML = "☯ 是否借道阴阳？";
+                layerBtn.className = "map-btn layer-switch-btn"; // Add custom class if needed
+                layerBtn.style.width = "100%";
+                layerBtn.style.marginTop = "10px";
+                layerBtn.style.background = "linear-gradient(45deg, #333, #555)";
+                layerBtn.style.border = "1px solid #777";
+                
+                if (targetMap.locked) {
+                    // Check if accessible (logic from requestEnterMap logic duplicate for UI hint?)
+                    // For now just show lock if locked, but Logic.requestEnterMap handles the specific yin pass logic
+                    // We won't disable it here to allow the "interactive" feel of clicking and getting a message
+                }
+
+                layerBtn.onclick = () => {
+                    Logic.requestEnterMap(targetId);
+                };
+                mapList.appendChild(layerBtn);
+            }
         }
     },
 
@@ -1071,7 +1229,9 @@ const UI = {
         document.getElementById('map-hint').classList.add('hidden');
         document.getElementById('current-map-name').textContent = map.name;
         
-        const monsterText = map.monsters && map.monsters.length > 0 ? map.monsters.join('、') : "无";
+        const monsterText = (map.monsterPool && map.monsterPool.length > 0) 
+            ? map.monsterPool.join('、') 
+            : (map.monsters && map.monsters.length > 0 ? map.monsters.join('、') : "无");
         document.getElementById('map-monsters').textContent = monsterText;
         
         const dropsText = map.drops && map.drops.length > 0 ? map.drops.join('、') : "无";

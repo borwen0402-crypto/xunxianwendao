@@ -1055,6 +1055,12 @@ const gameState = {
                     this.maxMp = Math.max(1, (Number(this.maxMp) || 1) + value);
                     this.mp = Math.max(0, Math.min(this.maxMp, Number(this.mp) || 0));
                 }
+                if (this.combat && this.combat.player && typeof this.combat.player === 'object') {
+                    if (type === 'hp') this.combat.player.hp = this.hp;
+                    if (type === 'mp') this.combat.player.mp = this.mp;
+                    if (type === 'maxHp') this.combat.player.maxHp = this.maxHp;
+                    if (type === 'maxMp') this.combat.player.maxMp = this.maxMp;
+                }
                 applied++;
             } else if (ef.target && typeof ef.target === 'object' && typeof ef.target.monsterId === 'string') {
                 if (this.combat && Array.isArray(this.combat.monsters)) {
