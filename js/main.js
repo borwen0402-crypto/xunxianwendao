@@ -408,7 +408,6 @@ function initEventListeners() {
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', handleLogout);
 
-    const btnBetaBoost = document.getElementById('btn-beta-boost');
     const btnBetaBoostLeft = document.getElementById('btn-beta-boost-left');
     
     const handleBetaBoost = () => {
@@ -420,25 +419,60 @@ function initEventListeners() {
         
         const flags = gameState.story.flags;
 
-        if (!flags.betaBoostActive) {
-            // === Activate Boost ===
-            
-            // Check for legacy state (already boosted but no flag)
-            if (gameState.maxHp >= 99999 && gameState.atk >= 5000) {
-                flags.betaBoostActive = true;
-                // Create default backup since we don't have the original
-                flags.betaBoostBackup = {
-                    hp: 100, maxHp: 100, mp: 50, maxMp: 50, atk: 10, matk: 10, speed: 10
-                };
-                if (typeof UI !== 'undefined' && UI.addLog) {
-                    UI.addLog('【系统】检测到数值已增强，状态已同步。再次点击可恢复默认值。', 'sys');
-                }
-                alert('检测到您已开启金手指。状态已同步。\n再次点击此按钮将把数值重置为默认值(100HP/10Atk)。');
-                // Save immediately
-                if (typeof gameState.save === 'function') gameState.save();
-                return;
+        // 0. Legacy/Inconsistent State Detection
+        // If flags say "OFF" but stats are "HIGH", we assume "ON" state with lost flags.
+        // We set it to ON so the logic below will treat it as a "Turn Off" (Restore) request immediately.
+        if (!flags.betaBoostActive && gameState.maxHp >= 99999 && gameState.atk >= 5000) {
+            console.warn("[BetaBoost] Detected high stats without active flag. Syncing to ACTIVE state.");
+            flags.betaBoostActive = true;
+            // Since we don't have original stats, we assume standard defaults
+            flags.betaBoostBackup = {
+                hp: 100, maxHp: 100, mp: 50, maxMp: 50, atk: 10, matk: 10, speed: 10
+            };
+            if (typeof UI !== 'undefined' && UI.addLog) {
+                UI.addLog('【系统】检测到异常高数值，已自动同步金手指状态。正在执行关闭操作...', 'sys');
             }
+        }
 
+        if (flags.betaBoostActive) {
+            // === Deactivate (Restore) ===
+            const backup = flags.betaBoostBackup;
+            console.log("[BetaBoost] Restoring from backup:", backup);
+            
+            if (backup) {
+                // Restore Stats with explicit Number conversion
+                if (backup.maxHp !== undefined) gameState.maxHp = Number(backup.maxHp);
+                if (backup.hp !== undefined) gameState.hp = Number(backup.hp);
+                if (backup.maxMp !== undefined) gameState.maxMp = Number(backup.maxMp);
+                if (backup.mp !== undefined) gameState.mp = Number(backup.mp);
+                if (backup.atk !== undefined) gameState.atk = Number(backup.atk);
+                if (backup.matk !== undefined) gameState.matk = Number(backup.matk);
+                if (backup.speed !== undefined) gameState.speed = Number(backup.speed);
+                
+                // Safety clamp
+                if (gameState.hp > gameState.maxHp) gameState.hp = gameState.maxHp;
+                if (gameState.mp > gameState.maxMp) gameState.mp = gameState.maxMp;
+                
+                if (typeof UI !== 'undefined' && UI.addLog) {
+                    UI.addLog(`【内测金手指】已关闭！数值还原: HP ${gameState.hp}/${gameState.maxHp}, 攻 ${gameState.atk}`, 'sys');
+                }
+            } else {
+                // Fallback if backup missing
+                if (typeof UI !== 'undefined' && UI.addLog) UI.addLog('【警告】无法找到原始数值备份，重置为默认值。', 'sys');
+                gameState.maxHp = 100; gameState.hp = 100;
+                gameState.maxMp = 50; gameState.mp = 50;
+                gameState.atk = 10; gameState.matk = 10;
+                gameState.speed = 10;
+            }
+            
+            // Clear Flag
+            flags.betaBoostActive = false;
+            delete flags.betaBoostBackup;
+            
+            alert('数值已恢复至原始状态。');
+        } else {
+            // === Activate (Boost) ===
+            
             // 1. Backup Stats
             flags.betaBoostBackup = {
                 hp: gameState.hp,
@@ -449,6 +483,7 @@ function initEventListeners() {
                 matk: gameState.matk,
                 speed: gameState.speed
             };
+            console.log("[BetaBoost] Backed up stats:", flags.betaBoostBackup);
             
             // 2. Apply Boost
             gameState.maxHp = 99999;
@@ -459,7 +494,7 @@ function initEventListeners() {
             gameState.matk = 5000;
             gameState.speed = 50;
             
-            // 3. Give Items (Always give items on activation as a bonus)
+            // 3. Give Items
             if (!gameState.inventory) gameState.inventory = {};
             gameState.inventory['息灾符'] = (gameState.inventory['息灾符'] || 0) + 10;
             gameState.inventory['天罡破煞符'] = (gameState.inventory['天罡破煞符'] || 0) + 10;
@@ -468,62 +503,23 @@ function initEventListeners() {
             // 4. Set Flag
             flags.betaBoostActive = true;
             
-            // 5. Log & UI
+            // 5. Log & Alert
             if (typeof UI !== 'undefined' && UI.addLog) {
                 UI.addLog('【内测金手指】已开启！数值大幅增强，获得强力符箓！', 'sys');
             }
-            if (typeof UI !== 'undefined') {
-                UI.renderLeftPanel();
-                UI.renderInventory();
-            }
-            
             alert('内测福利已发放！\n生命/法力 -> 99999\n双攻 -> 5000\n速度 -> 50\n并获得若干符箓。\n\n再次点击此按钮可恢复原始数值。');
-        } else {
-            // === Deactivate Boost ===
-            
-            // 1. Restore Stats
-            const backup = flags.betaBoostBackup;
-            if (backup) {
-                if (backup.maxHp !== undefined) gameState.maxHp = backup.maxHp;
-                if (backup.hp !== undefined) gameState.hp = backup.hp;
-                if (backup.maxMp !== undefined) gameState.maxMp = backup.maxMp;
-                if (backup.mp !== undefined) gameState.mp = backup.mp;
-                if (backup.atk !== undefined) gameState.atk = backup.atk;
-                if (backup.matk !== undefined) gameState.matk = backup.matk;
-                if (backup.speed !== undefined) gameState.speed = backup.speed;
-                
-                // Safety clamp
-                if (gameState.hp > gameState.maxHp) gameState.hp = gameState.maxHp;
-                if (gameState.mp > gameState.maxMp) gameState.mp = gameState.maxMp;
-            } else {
-                // Fallback
-                if (typeof UI !== 'undefined' && UI.addLog) UI.addLog('【警告】无法找到原始数值备份，重置为默认值。', 'sys');
-                gameState.maxHp = 100; gameState.hp = 100;
-                gameState.maxMp = 50; gameState.mp = 50;
-                gameState.atk = 10; gameState.matk = 10;
-                gameState.speed = 10;
-            }
-            
-            // 2. Clear Flag
-            flags.betaBoostActive = false;
-            delete flags.betaBoostBackup;
-            
-            // 3. Log & UI
-            if (typeof UI !== 'undefined' && UI.addLog) {
-                UI.addLog('【内测金手指】已关闭！数值已恢复。', 'sys');
-            }
-            if (typeof UI !== 'undefined') {
-                UI.renderLeftPanel();
-                UI.renderInventory();
-            }
-            alert('数值已恢复至原始状态。');
+        }
+        
+        // Common UI Refresh
+        if (typeof UI !== 'undefined') {
+            UI.renderLeftPanel();
+            UI.renderInventory();
         }
         
         // Save immediately
         if (typeof gameState.save === 'function') gameState.save();
     };
 
-    if (btnBetaBoost) btnBetaBoost.addEventListener('click', handleBetaBoost);
     if (btnBetaBoostLeft) btnBetaBoostLeft.addEventListener('click', handleBetaBoost);
 
     const btnReset = document.getElementById('btn-reset-save');
