@@ -213,6 +213,34 @@ const GameData = {
     // 3. 更新公告 (V1.9 新增)
     releaseNotes: [
         {
+            version: "v2.0.5 更新公告",
+            date: "2026-02-03",
+            title: "阴阳两界与符箓图鉴",
+            content: `
+                <div style="text-align:left;">
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、地图系统重构</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>阴阳双层世界</b>：新增表里世界切换机制，可通过特定入口（如思桥）借道阴阳。</li>
+                        <li><b>三维拓扑结构</b>：地图移动改为上下左右空间导航，不再是线性列表。</li>
+                        <li><b>修复与优化</b>：修复了地图无怪的问题，实装了阴间地图的怪物分布。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、符箓系统升级</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>符箓图鉴</b>：底部导航栏新增【符箓图鉴】，可查看已收录符箓的详细信息。</li>
+                        <li><b>信息完善</b>：图鉴显示符箓阶位、MP消耗、冷却回合及详细效果描述。</li>
+                        <li><b>境界对齐</b>：符箓使用等级已调整为“修士-寻道-入道”体系，与角色境界匹配。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">三、体验优化</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>视觉优化</b>：加深了行动日志的背景色，解决默认UI下文字显示过浅的问题。</li>
+                        <li><b>UI调整</b>：优化了底部导航栏布局。</li>
+                    </ul>
+                </div>
+            `
+        },
+        {
             version: "v2.0.0 内测版",
             date: "2026-02-02",
             title: "道统初立",
