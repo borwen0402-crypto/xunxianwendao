@@ -408,126 +408,138 @@ function initEventListeners() {
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', handleLogout);
 
-    const btnBetaBoostLeft = document.getElementById('btn-beta-boost-left');
-    
-    const handleBetaBoost = () => {
+    // Auto-remove ALL duplicate legacy buttons
+    document.querySelectorAll('#btn-beta-boost').forEach(btn => btn.remove());
+    document.querySelectorAll('#btn-beta-boost-left').forEach(btn => btn.remove());
+
+    // === Stats Modifier Logic ===
+    const btnStatsMod = document.getElementById('btn-stats-modifier');
+    const modModal = document.getElementById('stats-modifier-modal');
+    const btnModApply = document.getElementById('btn-mod-apply');
+    const btnModReset = document.getElementById('btn-mod-reset');
+    const btnModClose = document.getElementById('btn-mod-close');
+
+    // Inputs
+    const inputMaxHp = document.getElementById('mod-max-hp');
+    const inputMaxMp = document.getElementById('mod-max-mp');
+    const inputAtk = document.getElementById('mod-atk');
+    const inputMatk = document.getElementById('mod-matk');
+    const inputSpeed = document.getElementById('mod-speed');
+
+    const openStatsModifier = () => {
+        if (!modModal || typeof gameState === 'undefined') return;
+        
+        // Populate inputs with current values
+        if (inputMaxHp) inputMaxHp.value = gameState.maxHp || 100;
+        if (inputMaxMp) inputMaxMp.value = gameState.maxMp || 50;
+        if (inputAtk) inputAtk.value = gameState.atk || 10;
+        if (inputMatk) inputMatk.value = gameState.matk || 10;
+        if (inputSpeed) inputSpeed.value = gameState.speed || 10;
+
+        modModal.classList.remove('hidden');
+    };
+
+    const closeStatsModifier = () => {
+        if (modModal) modModal.classList.add('hidden');
+    };
+
+    const applyStatsModifier = () => {
         if (typeof gameState === 'undefined') return;
 
-        // Ensure story flags exist for persistence
-        if (!gameState.story) gameState.story = {};
-        if (!gameState.story.flags) gameState.story.flags = {};
-        
-        const flags = gameState.story.flags;
+        const newMaxHp = Number(inputMaxHp.value);
+        const newMaxMp = Number(inputMaxMp.value);
+        const newAtk = Number(inputAtk.value);
+        const newMatk = Number(inputMatk.value);
+        const newSpeed = Number(inputSpeed.value);
 
-        // 0. Legacy/Inconsistent State Detection
-        // If flags say "OFF" but stats are "HIGH", we assume "ON" state with lost flags.
-        // We set it to ON so the logic below will treat it as a "Turn Off" (Restore) request immediately.
-        if (!flags.betaBoostActive && gameState.maxHp >= 99999 && gameState.atk >= 5000) {
-            console.warn("[BetaBoost] Detected high stats without active flag. Syncing to ACTIVE state.");
-            flags.betaBoostActive = true;
-            // Since we don't have original stats, we assume standard defaults
-            flags.betaBoostBackup = {
-                hp: 100, maxHp: 100, mp: 50, maxMp: 50, atk: 10, matk: 10, speed: 10
-            };
-            if (typeof UI !== 'undefined' && UI.addLog) {
-                UI.addLog('【系统】检测到异常高数值，已自动同步金手指状态。正在执行关闭操作...', 'sys');
-            }
+        if ([newMaxHp, newMaxMp, newAtk, newMatk, newSpeed].some(v => !Number.isFinite(v) || v < 1)) {
+            alert("请输入有效的正整数！");
+            return;
         }
 
-        if (flags.betaBoostActive) {
-            // === Deactivate (Restore) ===
-            const backup = flags.betaBoostBackup;
-            console.log("[BetaBoost] Restoring from backup:", backup);
-            
-            if (backup) {
-                // Restore Stats with explicit Number conversion
-                if (backup.maxHp !== undefined) gameState.maxHp = Number(backup.maxHp);
-                if (backup.hp !== undefined) gameState.hp = Number(backup.hp);
-                if (backup.maxMp !== undefined) gameState.maxMp = Number(backup.maxMp);
-                if (backup.mp !== undefined) gameState.mp = Number(backup.mp);
-                if (backup.atk !== undefined) gameState.atk = Number(backup.atk);
-                if (backup.matk !== undefined) gameState.matk = Number(backup.matk);
-                if (backup.speed !== undefined) gameState.speed = Number(backup.speed);
-                
-                // Safety clamp
-                if (gameState.hp > gameState.maxHp) gameState.hp = gameState.maxHp;
-                if (gameState.mp > gameState.maxMp) gameState.mp = gameState.maxMp;
-                
-                if (typeof UI !== 'undefined' && UI.addLog) {
-                    UI.addLog(`【内测金手指】已关闭！数值还原: HP ${gameState.hp}/${gameState.maxHp}, 攻 ${gameState.atk}`, 'sys');
-                }
-            } else {
-                // Fallback if backup missing
-                if (typeof UI !== 'undefined' && UI.addLog) UI.addLog('【警告】无法找到原始数值备份，重置为默认值。', 'sys');
-                gameState.maxHp = 100; gameState.hp = 100;
-                gameState.maxMp = 50; gameState.mp = 50;
-                gameState.atk = 10; gameState.matk = 10;
-                gameState.speed = 10;
-            }
-            
-            // Clear Flag
-            flags.betaBoostActive = false;
-            delete flags.betaBoostBackup;
-            
-            alert('数值已恢复至原始状态。');
-        } else {
-            // === Activate (Boost) ===
-            
-            // 1. Backup Stats
-            flags.betaBoostBackup = {
-                hp: gameState.hp,
-                maxHp: gameState.maxHp,
-                mp: gameState.mp,
-                maxMp: gameState.maxMp,
-                atk: gameState.atk,
-                matk: gameState.matk,
-                speed: gameState.speed
-            };
-            console.log("[BetaBoost] Backed up stats:", flags.betaBoostBackup);
-            
-            // 2. Apply Boost
-            gameState.maxHp = 99999;
-            gameState.hp = gameState.maxHp;
-            gameState.maxMp = 99999;
-            gameState.mp = gameState.maxMp;
-            gameState.atk = 5000;
-            gameState.matk = 5000;
-            gameState.speed = 50;
-            
-            // 3. Give Items
-            if (!gameState.inventory) gameState.inventory = {};
-            gameState.inventory['息灾符'] = (gameState.inventory['息灾符'] || 0) + 10;
-            gameState.inventory['天罡破煞符'] = (gameState.inventory['天罡破煞符'] || 0) + 10;
-            gameState.inventory['定心丹'] = (gameState.inventory['定心丹'] || 0) + 10;
+        gameState.maxHp = newMaxHp;
+        gameState.hp = newMaxHp; // Heal to full
+        gameState.maxMp = newMaxMp;
+        gameState.mp = newMaxMp;
+        gameState.atk = newAtk;
+        gameState.matk = newMatk;
+        gameState.speed = newSpeed;
 
-            // 4. Set Flag
-            flags.betaBoostActive = true;
-            
-            // 5. Log & Alert
-            if (typeof UI !== 'undefined' && UI.addLog) {
-                UI.addLog('【内测金手指】已开启！数值大幅增强，获得强力符箓！', 'sys');
-            }
-            alert('内测福利已发放！\n生命/法力 -> 99999\n双攻 -> 5000\n速度 -> 50\n并获得若干符箓。\n\n再次点击此按钮可恢复原始数值。');
-        }
-        
-        // Common UI Refresh
         if (typeof UI !== 'undefined') {
-            UI.renderLeftPanel();
-            UI.renderInventory();
+            if (UI.addLog) UI.addLog(`【数值修改】已应用：HP${newMaxHp}, 攻${newAtk}, 速${newSpeed}`, 'sys');
+            if (UI.renderLeftPanel) UI.renderLeftPanel();
+            if (UI.updateStatsUI) UI.updateStatsUI();
         }
-        
-        // Save immediately
+
+        alert("数值已修改并保存！");
+        closeStatsModifier();
         if (typeof gameState.save === 'function') gameState.save();
     };
 
-    if (btnBetaBoostLeft) btnBetaBoostLeft.addEventListener('click', handleBetaBoost);
+    const resetStatsToStandard = () => {
+        if (typeof gameState === 'undefined') return;
+        if (!confirm("确定要重置为当前境界的标准数值吗？这将清除所有额外修改。")) return;
 
-    // Auto-remove duplicate button if it exists (Fix for "Two Buttons" issue)
-    const duplicateBtn = document.getElementById('btn-beta-boost');
-    if (duplicateBtn) {
-        duplicateBtn.remove();
-        console.log("Removed duplicate beta boost button (btn-beta-boost)");
-    }
+        console.log("[StatsMod] Resetting to standard...");
+        
+        // Recalculate Logic (Same as before)
+        let newMaxHp = 100;
+        let newMaxMp = 50;
+        let newAtk = 10;
+        let newMatk = 10;
+        let newSpeed = 10;
+
+        if (typeof GameData !== 'undefined' && Array.isArray(GameData.realmProgression)) {
+            const cleanStage = (gameState.stage || "").trim();
+            const currentStageIdx = GameData.realmProgression.findIndex(r => r.stage === cleanStage);
+            
+            if (currentStageIdx !== -1) {
+                for (let i = 0; i <= currentStageIdx; i++) {
+                    const r = GameData.realmProgression[i];
+                    newMaxHp += (Number(r.hpBonus) || 0);
+                    newAtk += (Number(r.atkBonus) || 0);
+                    newMatk += (Number(r.matkBonus) || 0);
+                    
+                    if (gameState.daoType === '乾坤道') newAtk += 2;
+                }
+            }
+        }
+
+        if (gameState.allocatedStats) {
+            newMaxHp += (Number(gameState.allocatedStats.hp) || 0) * 10;
+            newMaxMp += (Number(gameState.allocatedStats.mp) || 0) * 10;
+            newAtk += (Number(gameState.allocatedStats.atk) || 0);
+            newMatk += (Number(gameState.allocatedStats.matk) || 0);
+            newSpeed += (Number(gameState.allocatedStats.speed) || 0);
+        }
+
+        // Update Inputs only (let user verify before applying? No, reset usually applies immediately or updates inputs)
+        // Let's update inputs so user can see what standard is, then they must click Apply.
+        // Actually, "Reset" usually implies action. But since we are in a modal, maybe just update fields?
+        // Let's update fields and let user decide to click Apply.
+        // Wait, button says "Reset to Standard". User expects action. 
+        // Better: Update inputs AND apply immediately? Or just update inputs?
+        // Safest: Update inputs and show message "Values reset to standard. Click Apply to save."
+        
+        if (inputMaxHp) inputMaxHp.value = newMaxHp;
+        if (inputMaxMp) inputMaxMp.value = newMaxMp;
+        if (inputAtk) inputAtk.value = newAtk;
+        if (inputMatk) inputMatk.value = newMatk;
+        if (inputSpeed) inputSpeed.value = newSpeed;
+
+        alert("已计算标准数值，请点击【应用修改】以生效。");
+    };
+
+    if (btnStatsMod) btnStatsMod.addEventListener('click', openStatsModifier);
+    if (btnModApply) btnModApply.addEventListener('click', applyStatsModifier);
+    if (btnModReset) btnModReset.addEventListener('click', resetStatsToStandard);
+    if (btnModClose) btnModClose.addEventListener('click', closeStatsModifier);
+
+    // Close on click outside
+    window.addEventListener('click', (e) => {
+        if (e.target === modModal) closeStatsModifier();
+    });
+
 
     const btnReset = document.getElementById('btn-reset-save');
     if (btnReset) btnReset.addEventListener('click', handleResetSave);

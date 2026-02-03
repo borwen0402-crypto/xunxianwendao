@@ -81,7 +81,7 @@
                          <label><input type="checkbox" id="pause-on-event" checked> 遇事暂停挂机</label>
                          <button id="btn-view-release-notes" class="btn-mini" style="margin-top:6px; width:100%;">📄 查看更新公告</button>
                          <button id="btn-theme-toggle" class="btn-mini" style="margin-top:6px; width:100%;">切换主题 (默认/摸鱼)</button>
-                         <button id="btn-beta-boost-left" class="btn-mini" style="margin-top:6px; width:100%; background: #f39c12; border-color: #e67e22; color: white;">⚡ 内测：一键飞升</button>
+                         <button id="btn-stats-modifier" class="btn-mini" style="margin-top:6px; width:100%; background: #9b59b6; border-color: #8e44ad; color: white;">🛠️ 数值修改器</button>
                          <label id="debug-meta-row" title="显示详细的调试元数据" style="display:none;"><input type="checkbox" id="debug-meta-toggle"> 显示调试元数据</label>
                     </div>
 
@@ -335,6 +335,44 @@
             </div>
             <div class="modal-actions" style="margin-top: 15px; text-align: right;">
                 <button id="btn-close-talisman-guide">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. 数值修改器弹窗 -->
+    <div id="stats-modifier-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px;">数值修改器</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-bottom: 15px;">
+                <div>
+                    <label style="display:block; font-size:0.9em; margin-bottom:4px; color:#aaa;">气血上限 (MaxHP)</label>
+                    <input type="number" id="mod-max-hp" style="width: 100%; padding: 6px; border:1px solid #555; background:#222; color:#eee; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.9em; margin-bottom:4px; color:#aaa;">灵力上限 (MaxMP)</label>
+                    <input type="number" id="mod-max-mp" style="width: 100%; padding: 6px; border:1px solid #555; background:#222; color:#eee; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.9em; margin-bottom:4px; color:#aaa;">攻击力 (Atk)</label>
+                    <input type="number" id="mod-atk" style="width: 100%; padding: 6px; border:1px solid #555; background:#222; color:#eee; border-radius:4px;">
+                </div>
+                 <div>
+                    <label style="display:block; font-size:0.9em; margin-bottom:4px; color:#aaa;">法术强度 (MAtk)</label>
+                    <input type="number" id="mod-matk" style="width: 100%; padding: 6px; border:1px solid #555; background:#222; color:#eee; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.9em; margin-bottom:4px; color:#aaa;">速度 (Speed)</label>
+                    <input type="number" id="mod-speed" style="width: 100%; padding: 6px; border:1px solid #555; background:#222; color:#eee; border-radius:4px;">
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #444; padding-top: 15px;">
+                <button id="btn-mod-reset" style="background: #7f8c8d; padding: 6px 12px; font-size: 0.9em;">↺ 重置为标准</button>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-mod-apply" style="background: #e74c3c; padding: 6px 15px;">应用修改</button>
+                    <button id="btn-mod-close" style="padding: 6px 12px;">关闭</button>
+                </div>
             </div>
         </div>
     </div>
