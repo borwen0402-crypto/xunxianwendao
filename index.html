@@ -297,6 +297,7 @@
             <button id="nav-battle" class="nav-btn">战斗</button>
             <button id="nav-inventory" class="nav-btn">背包</button>
             <button id="nav-lineage" class="nav-btn">借法</button>
+            <button id="nav-monster-guide" class="nav-btn">怪物图鉴</button>
             <button id="nav-talisman-guide" class="nav-btn">符箓图鉴</button>
             <button id="nav-trigger-event" class="nav-btn">触发事件(测)</button>
         </nav>
@@ -373,6 +374,26 @@
                     <button id="btn-mod-apply" style="background: #e74c3c; padding: 6px 15px;">应用修改</button>
                     <button id="btn-mod-close" style="padding: 6px 12px;">关闭</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 怪物图鉴 Modal -->
+    <div id="modal-monster-guide" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 800px; max-width: 95vw; height: 80vh; display: flex; flex-direction: column;">
+            <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 0; color: #e0e0e0;">怪物图鉴 <small style="font-size:0.6em; color:#888;">(已记录数据)</small></h3>
+            <div style="flex: 1; display: flex; overflow: hidden; gap: 15px; margin-top: 10px;">
+                <!-- Left: List -->
+                <div id="monster-guide-list" style="width: 220px; border-right: 1px solid #444; overflow-y: auto; padding-right: 10px;">
+                    <!-- Generated buttons -->
+                </div>
+                <!-- Right: Details -->
+                <div id="monster-guide-details" style="flex: 1; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                    <div style="color: #888; text-align: center; margin-top: 50px;">请选择左侧妖物查看详情</div>
+                </div>
+            </div>
+            <div class="modal-actions" style="border-top: 1px solid #444; padding-top: 10px; text-align: right; margin-top: 10px;">
+                 <button id="btn-monster-guide-close" style="padding: 6px 15px; background: #555; border: 1px solid #444; color: #eee; cursor: pointer;">关闭</button>
             </div>
         </div>
     </div>

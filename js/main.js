@@ -88,7 +88,7 @@ function enterGame() {
         
         console.log("%c 修仙测试版 - 开发者提示", "color: #ff0055; font-size: 20px; font-weight: bold;");
         console.log("%c 本游戏目前为纯前端架构（无后端），所有数据存储在本地(LocalStorage)。", "color: #666; font-size: 14px;");
-        console.log("%c ⚠️ 关于数据修改 (F12)：\n1. 这是一个单机测试版，我们不禁止您探索代码或修改数据。\n2. 但请注意：修改数值(如无限血量)可能会导致游戏乐趣丧失或逻辑崩溃(NaN/Infinity)。\n3. 提交Bug时，请注明是否使用了修改手段，这有助于我们定位问题。\n4. 请勿在玩家群传播修改后的截图误导他人。", "color: #e67e22; font-size: 14px; font-weight: bold;");
+        console.log("%c ⚠️ 关于数据修改 (F12)：\n1. 这是一个单机测试版，我们不禁止您探索代码或修改数据。\n2 提交Bug时，请注明是否使用了修改手段，这有助于我们定位问题。", "color: #e67e22; font-size: 14px; font-weight: bold;");
 
         // 初始化默认地图 (如果尚未设置或地图数据无效)
         if (!gameState.currentMap || !gameState.currentMap.name || !GameData.mapConfig[gameState.currentMap.name]) {
@@ -541,6 +541,45 @@ function initEventListeners() {
         alert("已计算标准数值，请点击【应用修改】以生效。");
     };
 
+    // Global helper for skill descriptions (Character & Monster)
+    window.getSkillDescription = (skillName) => {
+        if (!skillName || typeof GameData === 'undefined') return "暂无详细描述。";
+        
+        // 1. Check monster specific skills
+        if (GameData.monsterSkillConfig && GameData.monsterSkillConfig[skillName]) {
+            const m = GameData.monsterSkillConfig[skillName];
+            return m.desc || m.text || "暂无详细描述。";
+        }
+
+        // 2. Search in all Dao skills (Character)
+        if (GameData.skillConfig) {
+            for (const dao in GameData.skillConfig) {
+                const skills = GameData.skillConfig[dao];
+                if (Array.isArray(skills)) {
+                    const s = skills.find(sk => sk.name === skillName);
+                    if (s) {
+                        let desc = s.text || s.desc || "暂无描述";
+                        
+                        // Append numeric details
+                        const details = [];
+                        if (s.realm) details.push(`境界: ${s.realm}`);
+                        if (s.mpCost) details.push(`消耗: ${s.mpCost} MP`);
+                        if (s.baseDmg) details.push(`基础伤害: ${s.baseDmg}`);
+                        if (s.heal) details.push(`治疗: ${s.heal}`);
+                        if (s.cost && s.cost.hpPct) details.push(`消耗生命: ${s.cost.hpPct * 100}%`);
+                        if (s.cooldown) details.push(`冷却: ${s.cooldown}回合`);
+                        
+                        if (details.length > 0) {
+                            desc += `<br><br><span style="color:#aaa; font-size:0.9em">${details.join(' | ')}</span>`;
+                        }
+                        return desc;
+                    }
+                }
+            }
+        }
+        return "暂无详细描述。";
+    };
+
     if (btnStatsMod) btnStatsMod.addEventListener('click', openStatsModifier);
     if (btnModApply) btnModApply.addEventListener('click', applyStatsModifier);
     if (btnModReset) btnModReset.addEventListener('click', resetStatsToStandard);
@@ -584,6 +623,85 @@ function initEventListeners() {
             if (typeof UI !== 'undefined' && UI.addLog) UI.addLog(isEvent ? '已导出本次事件 JSON' : '已导出本场战斗 JSON', 'sys');
         });
     }
+
+    // === Monster Guide Logic ===
+    const btnMonsterGuideClose = document.getElementById('btn-monster-guide-close');
+    const navMonsterGuide = document.getElementById('nav-monster-guide');
+    const modalMonsterGuide = document.getElementById('modal-monster-guide');
+    const listMonsterGuide = document.getElementById('monster-guide-list');
+    const detailsMonsterGuide = document.getElementById('monster-guide-details');
+
+    const openMonsterGuide = () => {
+        if (!modalMonsterGuide || !listMonsterGuide) return;
+        modalMonsterGuide.style.display = 'flex'; 
+        
+        listMonsterGuide.innerHTML = '';
+        
+        let monsters = {};
+        if (typeof GameData !== 'undefined' && GameData.monsters) {
+            monsters = GameData.monsters;
+        }
+
+        const names = Object.keys(monsters).sort();
+        if (names.length === 0) {
+            listMonsterGuide.innerHTML = '<div style="padding:10px; color:#888;">暂无怪物数据</div>';
+            return;
+        }
+
+        names.forEach(name => {
+            const btn = document.createElement('div');
+            btn.textContent = name;
+            btn.style.padding = '8px 12px';
+            btn.style.cursor = 'pointer';
+            btn.style.borderBottom = '1px solid #333';
+            btn.style.color = '#aaa';
+            btn.onmouseover = () => btn.style.background = '#333';
+            btn.onmouseout = () => btn.style.background = '';
+            
+            btn.onclick = () => {
+                // Highlight
+                Array.from(listMonsterGuide.children).forEach(c => c.style.color = '#aaa');
+                btn.style.color = '#fff';
+                
+                // Show Details
+                const m = monsters[name];
+                let html = `<h2>${name}</h2>`;
+                if (m.desc) html += `<p style="color:#aaa; font-style:italic;">${m.desc}</p>`;
+                
+                html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0; background:#222; padding:10px; border-radius:4px;">
+                    <div>境界: ${m.level || '未知'}</div>
+                    <div>种族: ${m.race || '未知'}</div>
+                    <div>生命: ${m.hp || '?'}</div>
+                    <div>攻击: ${m.atk || '?'}</div>
+                    <div>防御: ${m.def || '?'}</div>
+                    <div>速度: ${m.speed || '?'}</div>
+                </div>`;
+
+                html += `<h3>拥有技能</h3>`;
+                if (m.skills && m.skills.length) {
+                    html += `<ul style="list-style:none; padding:0;">`;
+                    m.skills.forEach(skillName => {
+                        const desc = window.getSkillDescription ? window.getSkillDescription(skillName) : "暂无描述";
+                        html += `<li style="margin-bottom:12px; background:#2c3e50; padding:8px; border-radius:4px;">
+                            <strong style="color:#e74c3c;">${skillName}</strong>
+                            <div style="font-size:0.9em; color:#ccc; margin-top:4px;">${desc}</div>
+                        </li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<p style="color:#666;">无特殊技能</p>`;
+                }
+                
+                if (detailsMonsterGuide) detailsMonsterGuide.innerHTML = html;
+            };
+            listMonsterGuide.appendChild(btn);
+        });
+    };
+
+    if (navMonsterGuide) navMonsterGuide.addEventListener('click', openMonsterGuide);
+    if (btnMonsterGuideClose) btnMonsterGuideClose.addEventListener('click', () => {
+        modalMonsterGuide.style.display = 'none';
+    });
 
     // 8. 日志筛选
     const filterRoot = document.getElementById('log-filters');

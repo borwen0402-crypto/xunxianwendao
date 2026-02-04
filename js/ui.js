@@ -243,10 +243,10 @@ const UI = {
         const daoBranchRaw = (typeof gameState.daoBranch === 'string' && gameState.daoBranch.trim()) ? gameState.daoBranch.trim() : null;
         const daoLabel = daoTypeRaw ? (daoBranchRaw ? `${daoTypeRaw}·${daoBranchRaw}` : daoTypeRaw) : '未立道';
         const daoTipMap = {
-            '鬼道': '关键词：魂、怨、代价、记忆',
-            '阴阳道': '关键词：推演、调和、逆转',
-            '乾坤道': '关键词：兵戈、军势、本体',
-            '天一道': '关键词：融会、复现、平衡'
+            '鬼道': '驾驭幽冥之力，以生灵献祭，役使万鬼。',
+            '阴阳道': '推演天机变化，调和阴阳二气，逆转乾坤。',
+            '乾坤道': '锤炼肉身本体，凝练无上军势，兵戈止武。',
+            '天一道': '融会万家所长，复现诸般妙法，求得平衡。'
         };
         const daoTip = daoTypeRaw && daoTipMap[daoTypeRaw] ? daoTipMap[daoTypeRaw] : '寻道之时，将遇“立道”之机。首次选择不可逆。';
         
@@ -1546,8 +1546,12 @@ const UI = {
                     const li = document.createElement('li');
                     li.className = 'skill-card';
                     
-                    // [V2.0] Add tooltip
-                    li.title = `【${skill.name}】\n${skill.desc || skill.text || "暂无描述"}`;
+                    // [V2.0] Add tooltip with numeric details
+                    const desc = (typeof window.getSkillDescription === 'function') 
+                        ? window.getSkillDescription(skill.name) 
+                        : (skill.desc || skill.text || "暂无描述");
+                        
+                    li.setAttribute('data-tooltip-text', `<h4>${skill.name}</h4><p>${desc}</p>`);
                     
                     // Icon generation based on description/text
                     const text = (skill.text || skill.name) + (skill.desc || "");

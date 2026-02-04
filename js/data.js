@@ -198,16 +198,35 @@ const GameData = {
 
     // 2. 怪物配置 (V1.5 新增)
     monsters: {
-        "阴魂": { level: 1, hp: 120, maxHp: 120, mp: 0, atk: 18, def: 2, speed: 12, exp: 8, tags: ["spirit", "yin", "ghost"], skills: ["阴气侵体", "魂触"] },
-        "走尸": { level: 2, hp: 260, maxHp: 260, mp: 0, atk: 28, def: 8, speed: 6, exp: 18, tags: ["yin", "corpse", "elite", "undying_once"] },
-        "浮尸": { level: 1, hp: 200, maxHp: 200, mp: 0, atk: 22, def: 3, speed: 7, exp: 12, tags: ["yin", "corpse", "water"], skills: ["缠足"] },
-        "水鬼": { level: 2, hp: 220, maxHp: 220, mp: 0, atk: 32, def: 4, speed: 10, exp: 16, tags: ["yin", "ghost", "water"], skills: ["溺魂"] },
-        "山鬼": { level: 3, hp: 900, maxHp: 900, mp: 0, atk: 95, def: 18, speed: 10, exp: 60, tags: ["yin", "ghost", "elite", "chanter"], skills: ["魂兽召唤", "冰刃", "山鬼吟唱"] },
-        "魂兽": { level: 2, hp: 200, maxHp: 200, mp: 0, atk: 40, def: 6, speed: 12, exp: 10, tags: ["yin", "beast", "summon"] },
-        "吴正华": { level: 4, hp: 1100, maxHp: 1100, mp: 0, atk: 140, def: 22, speed: 14, exp: 80, tags: ["human", "thunder", "elite"], skills: ["九天雷亟", "全真借法·雷咒", "灭神"] },
-        "血尸": { level: 4, hp: 1100, maxHp: 1100, mp: 0, atk: 90, def: 22, speed: 8, exp: 70, tags: ["yin", "corpse", "elite"], skills: ["血污撕咬"] },
-        "怨尸": { level: 3, hp: 600, maxHp: 600, mp: 0, atk: 50, def: 12, speed: 9, exp: 45, tags: ["yin", "corpse"], skills: ["怨缠"] },
-        "鬼王": { level: 6, hp: 4800, maxHp: 4800, mp: 0, atk: 320, def: 40, speed: 12, exp: 260, tags: ["yin", "ghost", "boss", "chanter"], skills: ["万鬼朝宗", "血祭", "鬼域展开"] }
+        "阴魂": { level: "寻道前期", race: "鬼族", hp: 120, maxHp: 120, mp: 0, atk: 18, def: 2, speed: 12, exp: 8, tags: ["spirit", "yin", "ghost"], skills: ["阴气侵体", "魂触"] },
+        "走尸": { level: "寻道中期", race: "尸族", hp: 260, maxHp: 260, mp: 0, atk: 28, def: 8, speed: 6, exp: 18, tags: ["yin", "corpse", "elite", "undying_once"] },
+        "浮尸": { level: "寻道前期", race: "尸族", hp: 200, maxHp: 200, mp: 0, atk: 22, def: 3, speed: 7, exp: 12, tags: ["yin", "corpse", "water"], skills: ["缠足"] },
+        "水鬼": { level: "寻道中期", race: "鬼族", hp: 220, maxHp: 220, mp: 0, atk: 32, def: 4, speed: 10, exp: 16, tags: ["yin", "ghost", "water"], skills: ["溺魂"] },
+        "山鬼": { level: "寻道后期", race: "鬼族", hp: 900, maxHp: 900, mp: 0, atk: 95, def: 18, speed: 10, exp: 60, tags: ["yin", "ghost", "elite", "chanter"], skills: ["魂兽召唤", "冰刃", "山鬼吟唱"] },
+        "魂兽": { level: "寻道中期", race: "鬼族", hp: 200, maxHp: 200, mp: 0, atk: 40, def: 6, speed: 12, exp: 10, tags: ["yin", "beast", "summon"] },
+        "吴正华": { level: "寻道后期", race: "人族", hp: 1100, maxHp: 1100, mp: 0, atk: 140, def: 22, speed: 14, exp: 80, tags: ["human", "thunder", "elite"], skills: ["九天雷亟", "全真借法·雷咒", "灭神"] },
+        "血尸": { level: "寻道后期", race: "尸族", hp: 1100, maxHp: 1100, mp: 0, atk: 90, def: 22, speed: 8, exp: 70, tags: ["yin", "corpse", "elite"], skills: ["血污撕咬"] },
+        "怨尸": { level: "寻道中期", race: "尸族", hp: 600, maxHp: 600, mp: 0, atk: 50, def: 12, speed: 9, exp: 45, tags: ["yin", "corpse"], skills: ["怨缠"] },
+        "鬼王": { level: "入道中期", race: "鬼族", hp: 4800, maxHp: 4800, mp: 0, atk: 320, def: 40, speed: 12, exp: 260, tags: ["yin", "ghost", "boss", "chanter"], skills: ["万鬼朝宗", "血祭", "鬼域展开"] }
+    },
+
+    // 2.1 怪物技能配置 (V2.0.6 新增)
+    monsterSkillConfig: {
+        "阴气侵体": { desc: "阴魂特有的攻击手段，将寒冷阴气打入体内，造成持续伤害。" },
+        "魂触": { desc: "直接攻击灵魂，无视部分物理防御，直击神识。" },
+        "缠足": { desc: "水下浮尸的绝技，召唤水草或死人发丝缠住双脚，大幅降低速度。" },
+        "溺魂": { desc: "水鬼将目标拖入幻觉深渊，造成精神伤害并可能致幻。" },
+        "魂兽召唤": { desc: "山鬼呼唤山中游荡的兽魂助战，增加场上敌对目标。" },
+        "冰刃": { desc: "凝聚山间寒气化为锋利冰刃，造成冰属性伤害。" },
+        "山鬼吟唱": { desc: "古老的山歌，能强化自身防御或削弱敌人意志。" },
+        "九天雷亟": { desc: "吴正华引动九天神雷，对单体造成毁灭性打击，附带麻痹效果。" },
+        "全真借法·雷咒": { desc: "全真道秘传雷法，对邪祟有奇效，克制阴邪之物。" },
+        "灭神": { desc: "燃烧生命力的一击，意在神魂俱灭，威力巨大但伴随反噬。" },
+        "血污撕咬": { desc: "带有尸毒和污秽的撕咬，造成伤害并附加中毒效果。" },
+        "怨缠": { desc: "怨气化为实质锁链，限制敌人行动，降低其回避率。" },
+        "万鬼朝宗": { desc: "鬼王号令群鬼，造成全屏高额伤害，震慑全场。" },
+        "血祭": { desc: "献祭周围弱小鬼物或自身精血，大幅恢复自身伤势。" },
+        "鬼域展开": { desc: "展开自身鬼域，改变战场环境为绝对黑暗，提升自身全属性。" }
     },
 
     // 3. 更新公告 (V1.9 新增)
