@@ -422,6 +422,7 @@ const Rules = {
             const monsterProto = GameData.monsters[name] || { name: name, hp: 100, atk: 10, exp: 10 };
             monsters.push({
                 id: `m${i}`,
+                name: name, // Ensure name is explicitly set
                 ...monsterProto,
                 hp: monsterProto.hp, // Instance HP
                 maxHp: monsterProto.hp

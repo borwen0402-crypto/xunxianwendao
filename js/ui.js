@@ -1257,7 +1257,9 @@ const UI = {
         
         const monsterText = (map.monsterPool && map.monsterPool.length > 0) 
             ? map.monsterPool.join('、') 
-            : (map.monsters && map.monsters.length > 0 ? map.monsters.join('、') : "无");
+            : (map.monsters && map.monsters.length > 0 
+                ? map.monsters.map(m => (typeof m === 'object' && m.name) ? m.name : m).join('、') 
+                : "无");
         document.getElementById('map-monsters').textContent = monsterText;
         
         const dropsText = map.drops && map.drops.length > 0 ? map.drops.join('、') : "无";

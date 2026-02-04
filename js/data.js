@@ -213,6 +213,32 @@ const GameData = {
     // 3. 更新公告 (V1.9 新增)
     releaseNotes: [
         {
+            version: "v2.0.6 热更新",
+            date: "2026-02-04",
+            title: "怪物技能与测试工具修复",
+            content: `
+                <div style="text-align:left;">
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、怪物与战斗修复</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>名称显示修复</b>：修复了怪物名称错误显示为“未知妖物”的问题。</li>
+                        <li><b>技能实装</b>：实装了怪物技能通用逻辑，现在各类妖物会正常施展其专属技能（如阴魂的“阴气侵体”、浮尸的“缠足”等）。</li>
+                        <li><b>日志优化</b>：修复了战斗日志中怪物名字重复显示的问题，提升阅读体验。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、技能逻辑调整</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>纸人替身</b>：修复了“符箓·纸人替身”在非阴阳道途径下错误触发的问题，现在该效果仅对阴阳道修士生效。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">三、测试工具更新</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>数值修改器</b>：移除了原有的“一键数值外挂”，新增“数值修改器”面板（位于左侧设置栏）。</li>
+                        <li><b>自定义测试</b>：支持手动调整 HP、MP、攻击力、速度等属性，方便道友测试不同境界下的战斗强度，避免一刀秒怪无法体验技能交互。</li>
+                    </ul>
+                </div>
+            `
+        },
+        {
             version: "v2.0.5 更新公告",
             date: "2026-02-03",
             title: "阴阳两界与符箓图鉴",

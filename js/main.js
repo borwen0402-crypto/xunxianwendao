@@ -433,11 +433,17 @@ function initEventListeners() {
         if (typeof UI !== 'undefined' && UI.addLog) UI.addLog("打开数值修改器面板", "sys");
 
         // Populate inputs with current values
-        if (inputMaxHp) inputMaxHp.value = gameState.maxHp || 100;
-        if (inputMaxMp) inputMaxMp.value = gameState.maxMp || 50;
-        if (inputAtk) inputAtk.value = gameState.atk || 10;
-        if (inputMatk) inputMatk.value = gameState.matk || 10;
-        if (inputSpeed) inputSpeed.value = gameState.speed || 10;
+        let currentMaxHp = gameState.maxHp || 100;
+        let currentMaxMp = gameState.maxMp || 50;
+        let currentAtk = gameState.atk || 10;
+        let currentMatk = gameState.matk || 10;
+        let currentSpeed = gameState.speed || 10;
+
+        if (inputMaxHp) inputMaxHp.value = currentMaxHp;
+        if (inputMaxMp) inputMaxMp.value = currentMaxMp;
+        if (inputAtk) inputAtk.value = currentAtk;
+        if (inputMatk) inputMatk.value = currentMatk;
+        if (inputSpeed) inputSpeed.value = currentSpeed;
 
         modModal.classList.remove('hidden');
     };

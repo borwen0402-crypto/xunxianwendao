@@ -39,7 +39,8 @@ const CombatEngine = {
                     atk: Number(obj.atk) || 0,
                     dangerLevel: typeof obj.dangerLevel === 'number' ? obj.dangerLevel : (Number(obj.dangerLevel) || 0),
                     statuses: Array.isArray(obj.statuses) ? obj.statuses.slice() : [],
-                    tags: Array.isArray(obj.tags) ? obj.tags.slice() : []
+                    tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
+                    skills: Array.isArray(obj.skills) ? obj.skills.slice() : []
                 };
             })
             .filter(Boolean);
@@ -256,7 +257,7 @@ const CombatEngine = {
             if (afterHp <= 0 && monsterObj && Array.isArray(monsterObj.tags) && monsterObj.tags.includes('undying_once') && !findStatus(monsterObj.statuses, 'undying_used')) {
                 monsterHpById[monsterId] = 1;
                 statusChanges.push({ target: { monsterId }, op: 'refresh', status: { id: 'undying_used', name: '不腐之躯', stacks: 1, duration: 999 } });
-                logs.push({ type: 'battle', text: `【${monsterObj.name}】不腐之躯，残血不倒！`, tag: 'status_undying', round, sourceId: monsterId });
+                logs.push({ type: 'battle', text: `不腐之躯，残血不倒！`, tag: 'status_undying', round, sourceId: monsterId });
             }
             const playerOnHitRes = this.callRule(options, 'status', { phase: 'onHit', battlePhase, action: actionType, kind: 'damage', amount: dmg, source: 'player', target: { monsterId }, player, skill: usedSkill, monster: monsterObj, monsters, env, round, rng: random, suppression: playerSuppression });
             this.mergeRuleArtifacts({ logs, flags, statusChanges, effects }, playerOnHitRes);
@@ -467,7 +468,7 @@ const CombatEngine = {
                     if (d0 <= 1) {
                         statusChanges.push({ target: 'player', op: 'refresh', status: { id: 'fear', name: '恐惧', stacks: 1, duration: 1 } });
                         statusChanges.push({ target: { monsterId: m.id }, op: 'remove', status: { id: 'shan_ghost_chant' } });
-                        logs.push({ type: 'battle', text: `【${m.name}】吟唱未断，你心神一颤！`, tag: 'status_fear', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '山鬼吟唱', duration: 1 } });
+                        logs.push({ type: 'battle', text: `吟唱未断，你心神一颤！`, tag: 'status_fear', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '山鬼吟唱', duration: 1 } });
                     } else {
                         statusChanges.push({ target: { monsterId: m.id }, op: 'tick', status: { id: 'shan_ghost_chant', name: '山鬼吟唱', stacks: 1, duration: d0 - 1 } });
                     }
@@ -481,7 +482,7 @@ const CombatEngine = {
                         if (baseCombat && Array.isArray(baseCombat.monsters)) baseCombat.monsters.push({ ...s });
                         monsterHpById[summonId] = s.hp;
                         startingMonsterHpById[summonId] = s.hp;
-                        logs.push({ type: 'battle', text: `【${m.name}】召出魂兽！`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '魂兽召唤', summon: { name: '魂兽', count: 1 } } });
+                        logs.push({ type: 'battle', text: `召出魂兽！`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '魂兽召唤', summon: { name: '魂兽', count: 1 } } });
                     }
                 }
             }
@@ -490,7 +491,7 @@ const CombatEngine = {
                 const domain = findStatus(m.statuses, 'ghost_domain');
                 if (!domain && round === 0) {
                     statusChanges.push({ target: { monsterId: m.id }, op: 'refresh', status: { id: 'ghost_domain', name: '鬼域展开', stacks: 1, duration: 999 } });
-                    logs.push({ type: 'battle', text: `【${m.name}】鬼域展开，阴气陡盛。`, tag: 'skill_domain', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '鬼域展开' } });
+                    logs.push({ type: 'battle', text: `鬼域展开，阴气陡盛。`, tag: 'skill_domain', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '鬼域展开' } });
                 }
 
                 const aliveMinions = monsters.filter(mm => mm && mm.id !== m.id && (Number(monsterHpById[mm.id]) || 0) > 0);
@@ -501,7 +502,7 @@ const CombatEngine = {
                     monsterHpById[victim.id] = 0;
                     const heal = Math.max(1, Math.floor(bossMaxHp * 0.2));
                     monsterHpById[m.id] = Math.min(bossMaxHp, bossHp + heal);
-                    logs.push({ type: 'battle', text: `【${m.name}】血祭吞噬随从，恢复 ${heal} 气血`, tag: 'skill_sacrifice', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '血祭', heal } });
+                    logs.push({ type: 'battle', text: `血祭吞噬随从，恢复 ${heal} 气血`, tag: 'skill_sacrifice', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '血祭', heal } });
                 } else if (aliveMinions.length < 2 && random() < 0.55) {
                     const want = 2 + Math.floor(random() * 3);
                     const cap = 6;
@@ -514,7 +515,7 @@ const CombatEngine = {
                         monsterHpById[sid] = s.hp;
                         startingMonsterHpById[sid] = s.hp;
                     }
-                    if (canAdd > 0) logs.push({ type: 'battle', text: `【${m.name}】万鬼朝宗，阴魂应召（${canAdd}）`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '万鬼朝宗', summon: { name: '阴魂', count: canAdd } } });
+                    if (canAdd > 0) logs.push({ type: 'battle', text: `万鬼朝宗，阴魂应召（${canAdd}）`, tag: 'skill_summon', round, sourceId: m.id, meta: { action: 'monster_skill', skillName: '万鬼朝宗', summon: { name: '阴魂', count: canAdd } } });
                 }
             }
 
@@ -529,19 +530,34 @@ const CombatEngine = {
 
             const aiRes = this.callRule(options, 'ai', { phase: 'decide', battlePhase, player, monster: m, monsters, env, round, rng: random, suppression: monsterSuppression });
             this.mergeRuleArtifacts({ logs, flags, statusChanges, effects }, aiRes);
-            const aiAction = aiRes && typeof aiRes.action === 'string' ? aiRes.action : 'basic';
+            let aiAction = aiRes && typeof aiRes.action === 'string' ? aiRes.action : 'basic';
+
+            // Generic Monster Skill Logic (V2.0.5 Fix)
+            if (aiAction === 'basic' && !sealed && m.skills && Array.isArray(m.skills) && m.skills.length > 0 && random() < 0.35) {
+                const skillName = m.skills[Math.floor(random() * m.skills.length)];
+                logs.push({ 
+                    type: 'battle', 
+                    text: `施展了【${skillName}】！`, 
+                    tag: 'skill', 
+                    round, 
+                    sourceId: m.id, 
+                    meta: { action: 'monster_skill', skillName } 
+                });
+                aiAction = 'skill'; // Triggers 1.25x damage multiplier
+            }
+
             if (aiAction === 'defend') {
                 statusChanges.push({ target: { monsterId: m.id }, op: 'refresh', status: { id: 'defend', stacks: 1, duration: 1 } });
-                logs.push({ type: 'battle', text: `【${m.name}】摆出防御姿态`, tag: 'ai_defend', round, sourceId: m.id });
+                logs.push({ type: 'battle', text: `摆出防御姿态`, tag: 'ai_defend', round, sourceId: m.id });
                 continue;
             }
             if (aiAction === 'switchTarget' && aiRes && typeof aiRes.targetId === 'string' && aiRes.targetId.trim()) {
                 flags.nextActiveTargetId = aiRes.targetId.trim();
-                logs.push({ type: 'battle', text: `【${m.name}】发出挑衅，目标锁定变化`, tag: 'ai_switch', round, sourceId: m.id });
+                logs.push({ type: 'battle', text: `发出挑衅，目标锁定变化`, tag: 'ai_switch', round, sourceId: m.id });
             }
 
-            if (random() < 0.1) {
-                logs.push({ type: 'battle', text: "符箓·纸人替身无声燃尽，为你挡下了一次致命杀机。", tag: 'skill', round, sourceId: m.id });
+            if (player.activeDao === '阴阳道' && random() < 0.1) {
+                logs.push({ type: 'battle', text: "符箓·纸人替身无声燃尽，为你挡下了一次致命杀机。", tag: 'skill', round, sourceId: null });
                 continue;
             }
 
@@ -571,7 +587,7 @@ const CombatEngine = {
             effects.push({ source: { monsterId: m.id }, target: 'player', type: 'hp', value: -monsterDmg, meta: { kind: 'damage' } });
             const monsterOnHitRes = this.callRule(options, 'status', { phase: 'onHit', battlePhase, action: 'basic', kind: 'damage', amount: monsterDmg, source: { monsterId: m.id }, target: 'player', player, monster: m, monsters, env, round, rng: random, suppression: monsterSuppression });
             this.mergeRuleArtifacts({ logs, flags, statusChanges, effects }, monsterOnHitRes);
-            logs.push({ type: 'battle', text: `【${m.name}】发起攻击，你受到 ${monsterDmg} 伤害`, tag: 'dmg-taken', round, sourceId: m.id, meta: { action: 'monster_basic', damage: monsterDmg } });
+            logs.push({ type: 'battle', text: `发起攻击，你受到 ${monsterDmg} 伤害`, tag: 'dmg-taken', round, sourceId: m.id, meta: { action: 'monster_basic', damage: monsterDmg } });
 
             if (playerHp <= 0) break;
         }
