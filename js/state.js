@@ -244,7 +244,13 @@ const gameState = {
             maxExp: Number(this.maxExp) || 0,
             atk: Number(this.atk) || 0,
             matk: Number(this.matk) || 0,
+            techPower: Number(this.techPower) || 0,
+            spellPower: Number(this.spellPower) || 0,
             speed: Number(this.speed) || 10,
+            critRate: Number(this.critRate) || 0,
+            critMult: Number(this.critMult) || 1.5,
+            damageReduction: Number(this.damageReduction) || 0,
+            interruptResist: Number(this.interruptResist) || 0,
             attributePoints: Number(this.attributePoints) || 0,
             allocatedStats: deepClone(this.allocatedStats && typeof this.allocatedStats === 'object' ? this.allocatedStats : { atk: 0, matk: 0, hp: 0, mp: 0, speed: 0 }),
             realm: this.realm ?? "凡人",
@@ -257,6 +263,7 @@ const gameState = {
             activeDao: this.activeDao ?? "随机",
             daoAffinity: deepClone(this.daoAffinity && typeof this.daoAffinity === 'object' ? this.daoAffinity : {}),
             inventory: deepClone(this.inventory && typeof this.inventory === 'object' ? this.inventory : {}),
+            equipment: deepClone(this.equipment && typeof this.equipment === 'object' ? this.equipment : { mainWeapon: null }),
             settings: deepClone(this.settings && typeof this.settings === 'object' ? this.settings : { pauseOnEvent: true }),
             story: deepClone(this.story && typeof this.story === 'object' ? this.story : {}),
             world: deepClone(this.world && typeof this.world === 'object' ? this.world : { tendencies: { order: 0, chaos: 0, omen: 0 } })
@@ -280,7 +287,13 @@ const gameState = {
         this.maxExp = Number(b.maxExp) || 0;
         this.atk = Number(b.atk) || 0;
         this.matk = Number(b.matk) || 0;
+        this.techPower = Number(b.techPower) || (Number(b.matk) || 0);
+        this.spellPower = Number(b.spellPower) || (Number(b.matk) || 0);
         this.speed = Number(b.speed) || 10;
+        this.critRate = Math.max(0, Math.min(1, Number(b.critRate) || 0));
+        this.critMult = Math.max(1, Math.min(5, Number(b.critMult) || 1.5));
+        this.damageReduction = Math.max(0, Math.min(0.8, Number(b.damageReduction) || 0));
+        this.interruptResist = Math.max(0, Math.min(1, Number(b.interruptResist) || 0));
         this.attributePoints = Number(b.attributePoints) || 0;
         this.allocatedStats = b.allocatedStats && typeof b.allocatedStats === 'object' ? JSON.parse(JSON.stringify(b.allocatedStats)) : { atk: 0, matk: 0, hp: 0, mp: 0, speed: 0 };
 
@@ -297,6 +310,7 @@ const gameState = {
 
         this.daoAffinity = b.daoAffinity && typeof b.daoAffinity === 'object' ? JSON.parse(JSON.stringify(b.daoAffinity)) : {};
         this.inventory = b.inventory && typeof b.inventory === 'object' ? JSON.parse(JSON.stringify(b.inventory)) : {};
+        this.equipment = b.equipment && typeof b.equipment === 'object' ? JSON.parse(JSON.stringify(b.equipment)) : { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
         this.settings = b.settings && typeof b.settings === 'object' ? JSON.parse(JSON.stringify(b.settings)) : { pauseOnEvent: true };
         this.story = b.story && typeof b.story === 'object' ? JSON.parse(JSON.stringify(b.story)) : {};
         this.world = b.world && typeof b.world === 'object' ? JSON.parse(JSON.stringify(b.world)) : { tendencies: { order: 0, chaos: 0, omen: 0 } };
@@ -331,7 +345,13 @@ const gameState = {
     maxExp: 100,
     atk: 10,
     matk: 10,
+    techPower: 10,
+    spellPower: 10,
     speed: 10,
+    critRate: 0,
+    critMult: 1.5,
+    damageReduction: 0,
+    interruptResist: 0,
     attributePoints: 0, // 自由属性点
     allocatedStats: { atk: 0, matk: 0, hp: 0, mp: 0, speed: 0 }, // 已分配点数
     
@@ -354,7 +374,8 @@ const gameState = {
     ghosts: [],
     soulUrn: { level: 1, capacity: 1, efficiency: 1, stability: 50 },
     inventory: {}, // 背包
-    settings: { pauseOnEvent: true }, // 设置
+    equipment: { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null },
+    settings: { pauseOnEvent: true, theme: '' }, // 设置
 
     story: {
         chainId: null,
@@ -385,7 +406,13 @@ const gameState = {
             maxExp: this.maxExp,
             atk: this.atk,
             matk: this.matk,
+            techPower: this.techPower,
+            spellPower: this.spellPower,
             speed: this.speed,
+            critRate: this.critRate,
+            critMult: this.critMult,
+            damageReduction: this.damageReduction,
+            interruptResist: this.interruptResist,
             attributePoints: this.attributePoints,
             allocatedStats: this.allocatedStats,
             realm: this.realm,
@@ -404,6 +431,7 @@ const gameState = {
             ghosts: this.ghosts,
             soulUrn: this.soulUrn,
             inventory: this.inventory,
+            equipment: this.equipment,
             settings: this.settings,
             story: this.story,
             world: this.world,
@@ -435,6 +463,10 @@ const gameState = {
                 
                 // 兼容性修复：确保核心对象存在
                 if (!this.inventory || typeof this.inventory !== 'object') this.inventory = {};
+                if (!this.equipment || typeof this.equipment !== 'object') this.equipment = { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
+                if (!Object.prototype.hasOwnProperty.call(this.equipment, 'daoRing1')) this.equipment.daoRing1 = this.equipment.daoRing ?? null;
+                if (!Object.prototype.hasOwnProperty.call(this.equipment, 'daoRing2')) this.equipment.daoRing2 = null;
+                if (Object.prototype.hasOwnProperty.call(this.equipment, 'daoRing')) delete this.equipment.daoRing;
                 if (!this.daoAffinity || typeof this.daoAffinity !== 'object') this.daoAffinity = {};
                 if (!this.settings) this.settings = { pauseOnEvent: true };
                 if (!this.world || typeof this.world !== 'object') this.world = { tendencies: { order: 0, chaos: 0, omen: 0 } };
@@ -450,6 +482,20 @@ const gameState = {
                 this.replay.enabled = this.replay.enabled === true;
                 this.replay.seq = Number(this.replay.seq) || 0;
                 this.replay.lastAction = null;
+                if (!Object.prototype.hasOwnProperty.call(this, 'techPower')) this.techPower = Number(this.matk) || 0;
+                if (!Object.prototype.hasOwnProperty.call(this, 'spellPower')) this.spellPower = Number(this.matk) || 0;
+                if (!Object.prototype.hasOwnProperty.call(this, 'critRate')) this.critRate = 0;
+                if (!Object.prototype.hasOwnProperty.call(this, 'critMult')) this.critMult = 1.5;
+                if (!Object.prototype.hasOwnProperty.call(this, 'damageReduction')) this.damageReduction = 0;
+                if (!Object.prototype.hasOwnProperty.call(this, 'interruptResist')) this.interruptResist = 0;
+                this.techPower = Number(this.techPower) || (Number(this.matk) || 0);
+                this.spellPower = Number(this.spellPower) || (Number(this.matk) || 0);
+                this.critRate = Math.max(0, Math.min(1, Number(this.critRate) || 0));
+                this.critMult = Math.max(1, Math.min(5, Number(this.critMult) || 1.5));
+                this.damageReduction = Math.max(0, Math.min(0.8, Number(this.damageReduction) || 0));
+                this.interruptResist = Math.max(0, Math.min(1, Number(this.interruptResist) || 0));
+                if (Object.prototype.hasOwnProperty.call(this, 'hitRate')) delete this.hitRate;
+                if (Object.prototype.hasOwnProperty.call(this, 'dodgeRate')) delete this.dodgeRate;
                 const wt = this.world.tendencies;
                 const clamp = (v) => {
                     const n = Number(v);

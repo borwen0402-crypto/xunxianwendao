@@ -37,10 +37,15 @@ const CombatEngine = {
                     hp: Number(obj.hp) || 0,
                     maxHp: typeof obj.maxHp === 'number' ? obj.maxHp : (Number(obj.maxHp) || (Number(obj.hp) || 0)),
                     atk: Number(obj.atk) || 0,
+                    def: Number(obj.def) || 0,
+                    speed: Number(obj.speed) || 0,
                     dangerLevel: typeof obj.dangerLevel === 'number' ? obj.dangerLevel : (Number(obj.dangerLevel) || 0),
                     statuses: Array.isArray(obj.statuses) ? obj.statuses.slice() : [],
                     tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
-                    skills: Array.isArray(obj.skills) ? obj.skills.slice() : []
+                    skills: Array.isArray(obj.skills) ? obj.skills.slice() : [],
+                    critRate: Number.isFinite(Number(obj.critRate)) ? Number(obj.critRate) : undefined,
+                    critMult: Number.isFinite(Number(obj.critMult)) ? Number(obj.critMult) : undefined,
+                    damageReduction: Number.isFinite(Number(obj.damageReduction)) ? Number(obj.damageReduction) : undefined
                 };
             })
             .filter(Boolean);
@@ -59,6 +64,13 @@ const CombatEngine = {
             maxMp: Number.isFinite(Number(p.maxMp)) ? Number(p.maxMp) : null,
             atk: Number(p.atk) || 0,
             matk: Number(p.matk) || 0,
+            techPower: Number.isFinite(Number(p.techPower)) ? Number(p.techPower) : (Number.isFinite(Number(p.tech)) ? Number(p.tech) : (Number(p.matk) || 0)),
+            spellPower: Number.isFinite(Number(p.spellPower)) ? Number(p.spellPower) : (Number.isFinite(Number(p.spellDamage)) ? Number(p.spellDamage) : (Number(p.matk) || 0)),
+            speed: Number(p.speed) || 0,
+            critRate: Number.isFinite(Number(p.critRate)) ? Number(p.critRate) : undefined,
+            critMult: Number.isFinite(Number(p.critMult)) ? Number(p.critMult) : undefined,
+            damageReduction: Number.isFinite(Number(p.damageReduction)) ? Number(p.damageReduction) : undefined,
+            interruptResist: Number.isFinite(Number(p.interruptResist)) ? Number(p.interruptResist) : undefined,
             realm: p.realm || "寻道",
             subRealm: p.subRealm || "初期",
             activeDao: p.activeDao || "随机",
@@ -208,9 +220,11 @@ const CombatEngine = {
             if (!burn) continue;
             const maxHp = Number(m.maxHp) || Math.max(1, Number(m.hp) || 1);
             const pct = Number.isFinite(Number(burn.hpPct)) ? Number(burn.hpPct) : 0.05;
-            const dmg = Math.max(1, Math.floor(maxHp * Math.max(0, Math.min(0.5, pct))));
+            const rawDmg = Math.max(1, Math.floor(maxHp * Math.max(0, Math.min(0.5, pct))));
+            const reduction = this.getDamageReduction(m);
+            const dmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
             monsterHpById[m.id] = Math.max(0, hp - dmg);
-            logs.push({ type: 'battle', text: `【${m.name}】灼烧作痛，损失 ${dmg} 气血`, tag: 'dmg', round, sourceId: 'player', targetId: m.id, meta: { action: 'dot', statusId: 'burn', damage: dmg } });
+            logs.push({ type: 'battle', text: `【${m.name}】灼烧作痛，损失 ${dmg} 气血`, tag: 'dmg', round, sourceId: 'player', targetId: m.id, meta: { action: 'dot', statusId: 'burn', damage: dmg, breakdown: { kind: 'dot', damageType: 'Spell', statusId: 'burn', maxHp, hpPct: pct, rawDamage: rawDmg, damageReduction: reduction, final: dmg } } });
         }
 
         const target = this.pickTarget(monsters, monsterHpById, normalized.activeTargetId);
@@ -249,9 +263,9 @@ const CombatEngine = {
             const damageMult = baseSuppressionDamageMult * statusDamageMult * skillDamageMult;
             const flatDamage = skillEffectRuleRes && typeof skillEffectRuleRes.flatDamage === 'number' ? skillEffectRuleRes.flatDamage : 0;
 
-        const dealTo = (monsterId, dmg, hitIdx, usedSkill, actionType) => {
+        const dealTo = (monsterId, dmg, hitIdx, usedSkill, actionType, breakdown) => {
             monsterHpById[monsterId] = (Number(monsterHpById[monsterId]) || 0) - dmg;
-            effects.push({ source: 'player', target: { monsterId }, type: 'hp', value: -dmg, meta: { kind: 'damage', hit: hitIdx } });
+            effects.push({ source: 'player', target: { monsterId }, type: 'hp', value: -dmg, meta: { kind: 'damage', hit: hitIdx, breakdown: breakdown || undefined } });
             const monsterObj = monsters.find(mm => mm && mm.id === monsterId) || target;
             const afterHp = Number(monsterHpById[monsterId]) || 0;
             if (afterHp <= 0 && monsterObj && Array.isArray(monsterObj.tags) && monsterObj.tags.includes('undying_once') && !findStatus(monsterObj.statuses, 'undying_used')) {
@@ -291,7 +305,6 @@ const CombatEngine = {
                 }
 
                 const tags = Array.isArray(skill && skill.tags) ? skill.tags : [];
-                const isPhysical = tags.includes('physical');
                 const isAoe = tags.includes('aoe');
                 const isDoubleHit = tags.includes('double_hit');
                 const isSummonGhost = tags.includes('summon') && tags.includes('ghost');
@@ -300,8 +313,7 @@ const CombatEngine = {
                 const isYang = tags.includes('yang');
                 const isYin = tags.includes('yin');
                 const isSpiritBonus = tags.includes('spirit_bonus');
-                const scaleStat = isPhysical ? playerAtk : playerMatk;
-                const baseDmg = (skill.baseDmg || 0) + scaleStat;
+                const damageSpec = this.normalizeSkillDamageSpec(skill, 'skill');
 
                 if (omenAll !== 0 || chaosAll !== 0) {
                     const payload = {};
@@ -352,33 +364,50 @@ const CombatEngine = {
 
                 const envYinYang = env && Number.isFinite(Number(env.yinYang)) ? Number(env.yinYang) : 0;
                 const envMult = (isYang && envYinYang < 0) ? 1.2 : ((isYin && envYinYang > 0) ? 1.2 : 1);
-                const rollDmg = (mult, spiritMult) => Math.floor(((baseDmg + flatDamage) * realmConfig.skillMult * damageMult * envMult * mult * (spiritMult || 1)) * (0.9 + random() * 0.2));
+                const computeHit = (mult, spiritMult, defender) => {
+                    const systemMult = (Number(realmConfig.skillMult) || 1) * (Number(damageMult) || 1) * (Number(envMult) || 1) * (Number(mult) || 1) * (Number(spiritMult) || 1);
+                    return this.computeDamage({
+                        attacker: player,
+                        defender,
+                        spec: damageSpec,
+                        rng: random,
+                        flatAdd: flatDamage,
+                        systemMult,
+                        bonusPct: 0
+                    });
+                };
 
                 if (isAoe) {
                     let total = 0;
+                    const hits = [];
                     for (let i = 0; i < monsters.length; i++) {
                         const mm = monsters[i];
                         const mhp = Number(monsterHpById[mm.id]) || 0;
                         if (mhp <= 0) continue;
                         const spiritMult = isSpiritBonus && Array.isArray(mm.tags) && mm.tags.includes('spirit') ? 1.5 : 1;
-                        const d = Math.max(0, rollDmg(0.9, spiritMult));
+                        const res = computeHit(0.9, spiritMult, mm);
+                        const d = Math.max(0, Number(res.damage) || 0);
                         total += d;
-                        dealTo(mm.id, d, 1, skill, 'skill');
+                        hits.push({ targetId: mm.id, damage: d, breakdown: res.breakdown || undefined });
+                        if (d > 0) dealTo(mm.id, d, 1, skill, 'skill', res.breakdown);
                     }
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 波及全体，造成总计 ${total} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: total } });
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 波及全体，造成总计 ${total} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: total, hits } });
                 } else if (isDoubleHit) {
                     const spiritMult = isSpiritBonus && Array.isArray(target.tags) && target.tags.includes('spirit') ? 1.5 : 1;
-                    const d1 = Math.max(0, rollDmg(0.8, spiritMult));
-                    const d2 = Math.max(0, rollDmg(0.8, spiritMult));
-                    dealTo(target.id, d1, 1, skill, 'skill');
-                    dealTo(target.id, d2, 2, skill, 'skill');
+                    const r1 = computeHit(0.8, spiritMult, target);
+                    const r2 = computeHit(0.8, spiritMult, target);
+                    const d1 = Math.max(0, Number(r1.damage) || 0);
+                    const d2 = Math.max(0, Number(r2.damage) || 0);
+                    if (d1 > 0) dealTo(target.id, d1, 1, skill, 'skill', r1.breakdown);
+                    if (d2 > 0) dealTo(target.id, d2, 2, skill, 'skill', r2.breakdown);
                     const sum = d1 + d2;
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 连击两次，造成 ${sum} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: sum } });
-                } else if (baseDmg > 0) {
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 连击两次，造成 ${sum} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: sum, hits: [{ targetId: target.id, damage: d1, breakdown: r1.breakdown || undefined }, { targetId: target.id, damage: d2, breakdown: r2.breakdown || undefined }] } });
+                } else if (this.skillHasDamagePotential(damageSpec, flatDamage)) {
                     const spiritMult = isSpiritBonus && Array.isArray(target.tags) && target.tags.includes('spirit') ? 1.5 : 1;
-                    const playerDmg = Math.max(0, rollDmg(1, spiritMult));
-                    dealTo(target.id, playerDmg, 1, skill, 'skill');
-                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 造成 ${playerDmg} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: playerDmg } });
+                    const r = computeHit(1, spiritMult, target);
+                    const playerDmg = Math.max(0, Number(r.damage) || 0);
+                    if (playerDmg > 0) dealTo(target.id, playerDmg, 1, skill, 'skill', r.breakdown);
+                    logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text} 造成 ${playerDmg} 伤害`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: playerDmg, hits: [{ targetId: target.id, damage: playerDmg, breakdown: r.breakdown || undefined }] } });
                 } else {
                     logs.push({ type: 'battle', text: `[${skill.name}] ${skill.text}`, tag: 'skill', round, targetId: target.id, sourceId: 'player', meta: { action: 'skill', skillName: skill.name, damage: 0 } });
                 }
@@ -397,10 +426,21 @@ const CombatEngine = {
             } else {
                 const isSpirit = Array.isArray(target.tags) && target.tags.includes('spirit');
                 const qiankunMult = (playerDaoType === '乾坤道' && isSpirit) ? 1.2 : 1;
-                const playerDmg = Math.floor((playerAtk + flatDamage) * damageMult * qiankunMult * (0.9 + random() * 0.2));
-                dealTo(target.id, playerDmg, 1, null, 'basic');
+                const basicSpec = this.normalizeSkillDamageSpec(null, 'basic');
+                const systemMult = (Number(damageMult) || 1) * (Number(qiankunMult) || 1);
+                const r = this.computeDamage({
+                    attacker: player,
+                    defender: target,
+                    spec: basicSpec,
+                    rng: random,
+                    flatAdd: flatDamage,
+                    systemMult,
+                    bonusPct: 0
+                });
+                const playerDmg = Math.max(0, Number(r.damage) || 0);
+                if (playerDmg > 0) dealTo(target.id, playerDmg, 1, null, 'basic', r.breakdown);
 
-                logs.push({ type: 'battle', text: `[普攻] 施展基础招式，造成 ${playerDmg} 伤害`, tag: 'dmg', round, targetId: target.id, sourceId: 'player', meta: { action: 'basic', skillName: '普攻', damage: playerDmg } });
+                logs.push({ type: 'battle', text: `[普攻] 施展基础招式，造成 ${playerDmg} 伤害`, tag: 'dmg', round, targetId: target.id, sourceId: 'player', meta: { action: 'basic', skillName: '普攻', damage: playerDmg, hits: [{ targetId: target.id, damage: playerDmg, breakdown: r.breakdown || undefined }] } });
 
                 const mpRegen = 5;
                 if (playerMaxMp !== null) {
@@ -416,16 +456,37 @@ const CombatEngine = {
                 const t2 = this.pickTarget(monsters, monsterHpById, normalized.activeTargetId);
                 if (t2) {
                     let sum = 0;
+                    const hits = [];
                     for (let gi = 0; gi < ghosts.length; gi++) {
                         const g = ghosts[gi];
                         if (!g || typeof g !== 'object') continue;
                         const rank = typeof g.rank === 'string' ? g.rank : '厉鬼';
-                        const base = rank === '鬼皇' ? 16 : (rank === '鬼王' ? 12 : 8);
-                        const dmg = Math.max(0, Math.floor(base * (0.9 + random() * 0.2)));
+                        const base = rank === '鬼皇' ? 18 : (rank === '鬼王' ? 14 : 10);
+                        const inherit = rank === '鬼皇' ? 0.35 : (rank === '鬼王' ? 0.28 : 0.22);
+                        const summonAttacker = {
+                            atk: Math.max(0, Math.floor(base + (Number(playerAtk) || 0) * inherit)),
+                            techPower: Math.max(0, Math.floor((Number(player.techPower) || Number(playerMatk) || 0) * inherit)),
+                            spellPower: Math.max(0, Math.floor((Number(player.spellPower) || Number(playerMatk) || 0) * inherit)),
+                            critRate: 0,
+                            critMult: (Number(player.critMult) || 1.5),
+                            damageReduction: 0
+                        };
+                        const summonSpec = this.normalizeSkillDamageSpec(null, 'summon');
+                        const r = this.computeDamage({
+                            attacker: summonAttacker,
+                            defender: t2,
+                            spec: summonSpec,
+                            rng: random,
+                            flatAdd: 0,
+                            systemMult: 1,
+                            bonusPct: 0
+                        });
+                        const dmg = Math.max(0, Number(r.damage) || 0);
                         sum += dmg;
-                        monsterHpById[t2.id] = (Number(monsterHpById[t2.id]) || 0) - dmg;
+                        hits.push({ targetId: t2.id, damage: dmg, breakdown: r.breakdown || undefined });
+                        if (dmg > 0) dealTo(t2.id, dmg, gi + 1, null, 'summon', r.breakdown);
                     }
-                    if (sum > 0) logs.push({ type: 'battle', text: `鬼物出手，造成 ${sum} 伤害`, tag: 'skill', round, targetId: t2.id, sourceId: 'player', meta: { action: 'ghost', damage: sum } });
+                    if (sum > 0) logs.push({ type: 'battle', text: `鬼物出手，造成 ${sum} 伤害`, tag: 'skill', round, targetId: t2.id, sourceId: 'player', meta: { action: 'summon', damage: sum, hits } });
                 }
             }
         }
@@ -582,12 +643,29 @@ const CombatEngine = {
                 return normal;
             })();
             const immune = findStatus(player.statuses, 'immune');
-            const monsterDmg = immune ? 0 : Math.floor(((Number(m.atk) || 0) + flatDamage) * takenMult * yinPenalty * (0.9 + random() * 0.2));
+            const monsterSpec = this.normalizeSkillDamageSpec(null, aiAction === 'skill' ? 'monster_skill' : 'monster_basic');
+            const r = immune
+                ? { damage: 0, breakdown: { kind: 'immune', damageType: monsterSpec.damageType || 'Physical' } }
+                : this.computeDamage({
+                    attacker: {
+                        ...m,
+                        atk: Number(m.atk) || 10,
+                        techPower: Number(m.techPower) || Number(m.atk) || 5,
+                        spellPower: Number(m.spellPower) || Number(m.atk) || 5
+                    },
+                    defender: player,
+                    spec: monsterSpec,
+                    rng: random,
+                    flatAdd: flatDamage,
+                    systemMult: (Number(takenMult) || 1) * (Number(yinPenalty) || 1),
+                    bonusPct: 0
+                });
+            const monsterDmg = Math.max(0, Number(r.damage) || 0);
             playerHp -= monsterDmg;
-            effects.push({ source: { monsterId: m.id }, target: 'player', type: 'hp', value: -monsterDmg, meta: { kind: 'damage' } });
-            const monsterOnHitRes = this.callRule(options, 'status', { phase: 'onHit', battlePhase, action: 'basic', kind: 'damage', amount: monsterDmg, source: { monsterId: m.id }, target: 'player', player, monster: m, monsters, env, round, rng: random, suppression: monsterSuppression });
+            effects.push({ source: { monsterId: m.id }, target: 'player', type: 'hp', value: -monsterDmg, meta: { kind: 'damage', breakdown: r.breakdown || undefined } });
+            const monsterOnHitRes = this.callRule(options, 'status', { phase: 'onHit', battlePhase, action: aiAction === 'skill' ? 'monster_skill' : 'monster_basic', kind: 'damage', amount: monsterDmg, source: { monsterId: m.id }, target: 'player', player, monster: m, monsters, env, round, rng: random, suppression: monsterSuppression });
             this.mergeRuleArtifacts({ logs, flags, statusChanges, effects }, monsterOnHitRes);
-            logs.push({ type: 'battle', text: `发起攻击，你受到 ${monsterDmg} 伤害`, tag: 'dmg-taken', round, sourceId: m.id, meta: { action: 'monster_basic', damage: monsterDmg } });
+            logs.push({ type: 'battle', text: `发起攻击，你受到 ${monsterDmg} 伤害`, tag: 'dmg-taken', round, sourceId: m.id, meta: { action: aiAction === 'skill' ? 'monster_skill' : 'monster_basic', damage: monsterDmg, hits: [{ targetId: 'player', damage: monsterDmg, breakdown: r.breakdown || undefined }] } });
 
             if (playerHp <= 0) break;
         }
@@ -838,9 +916,15 @@ const CombatEngine = {
                     hp: Number(obj.hp) || 0,
                     maxHp: typeof obj.maxHp === 'number' ? obj.maxHp : (Number(obj.maxHp) || null),
                     atk: Number(obj.atk) || 0,
+                    def: Number(obj.def) || 0,
+                    speed: Number(obj.speed) || 0,
                     dangerLevel: typeof obj.dangerLevel === 'number' ? obj.dangerLevel : (Number(obj.dangerLevel) || 0),
                     statuses: Array.isArray(obj.statuses) ? obj.statuses.slice() : [],
-                    tags: Array.isArray(obj.tags) ? obj.tags.slice() : []
+                    tags: Array.isArray(obj.tags) ? obj.tags.slice() : [],
+                    skills: Array.isArray(obj.skills) ? obj.skills.slice() : [],
+                    critRate: Number.isFinite(Number(obj.critRate)) ? Number(obj.critRate) : undefined,
+                    critMult: Number.isFinite(Number(obj.critMult)) ? Number(obj.critMult) : undefined,
+                    damageReduction: Number.isFinite(Number(obj.damageReduction)) ? Number(obj.damageReduction) : undefined
                 };
             })
             .filter(m => !!m);
@@ -950,6 +1034,185 @@ const CombatEngine = {
             }
             out.effects.push(...ruleRes.effects);
         }
+    },
+
+    clamp01: function(v) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return 0;
+        return Math.max(0, Math.min(1, n));
+    },
+
+    clampNumber: function(v, min, max, fallback) {
+        const n = Number(v);
+        const lo = Number(min);
+        const hi = Number(max);
+        if (!Number.isFinite(n) || !Number.isFinite(lo) || !Number.isFinite(hi)) return Number.isFinite(Number(fallback)) ? Number(fallback) : 0;
+        return Math.max(lo, Math.min(hi, n));
+    },
+
+    normalizeDamageType: function(type) {
+        const t0 = typeof type === 'string' ? type.trim() : '';
+        if (t0 === 'Physical' || t0 === 'Technique' || t0 === 'Spell' || t0 === 'True') return t0;
+        const lower = t0.toLowerCase();
+        if (lower === 'physical' || lower === '形') return 'Physical';
+        if (lower === 'technique' || lower === '术') return 'Technique';
+        if (lower === 'spell' || lower === '法') return 'Spell';
+        if (lower === 'true' || lower === '真') return 'True';
+        return null;
+    },
+
+    getEntityStat: function(entity, keys, fallback) {
+        const obj = entity && typeof entity === 'object' ? entity : null;
+        const arr = Array.isArray(keys) ? keys : [keys];
+        for (let i = 0; i < arr.length; i++) {
+            const k = arr[i];
+            if (!k) continue;
+            const v = obj && Object.prototype.hasOwnProperty.call(obj, k) ? Number(obj[k]) : NaN;
+            if (Number.isFinite(v)) return v;
+        }
+        const fb = Number(fallback);
+        return Number.isFinite(fb) ? fb : 0;
+    },
+
+    getCritRate: function(attacker) {
+        const v = this.getEntityStat(attacker, ['critRate', 'crit'], NaN);
+        if (Number.isFinite(v)) return this.clamp01(v);
+        return 0;
+    },
+
+    getCritMult: function(attacker) {
+        const v = this.getEntityStat(attacker, ['critMult', 'critMultiplier'], NaN);
+        if (Number.isFinite(v)) return this.clampNumber(v, 1, 5, 1.5);
+        return 1.5;
+    },
+
+    getDamageReduction: function(defender) {
+        const v = this.getEntityStat(defender, ['damageReduction', 'dr', 'reduction'], NaN);
+        if (Number.isFinite(v)) return this.clampNumber(v, 0, 0.8, 0);
+        const def = this.getEntityStat(defender, ['def'], NaN);
+        if (Number.isFinite(def) && def > 0) {
+            const r = def / (def + 100);
+            return this.clampNumber(r, 0, 0.6, 0);
+        }
+        return 0;
+    },
+
+    normalizeSkillDamageSpec: function(skill, actionType) {
+        const act = typeof actionType === 'string' ? actionType : '';
+        if (act === 'basic' || act === 'monster_basic' || act === 'monster_skill') {
+            return { name: act, damageType: 'Physical', baseDamage: 0, weights: { atk: 1, tech: 0, spell: 0 }, canCrit: true, canDodge: true, tags: ['basic'] };
+        }
+        if (act === 'summon') {
+            return { name: act, damageType: 'Spell', baseDamage: 0, weights: { atk: 1, tech: 0, spell: 0 }, canCrit: false, canDodge: true, tags: ['summon'] };
+        }
+        if (act === 'dot') {
+            return { name: act, damageType: 'Spell', baseDamage: 0, weights: { atk: 0, tech: 0, spell: 0 }, canCrit: false, canDodge: false, tags: ['dot'] };
+        }
+        const s = skill && typeof skill === 'object' ? skill : {};
+        const tags = Array.isArray(s.tags) ? s.tags : [];
+        const t = this.normalizeDamageType(s.damageType) || (() => {
+            if (tags.includes('true')) return 'True';
+            if (tags.includes('technique') || tags.includes('tech') || tags.includes('qi')) return 'Technique';
+            if (tags.includes('spell')) return 'Spell';
+            if (tags.includes('physical')) return 'Physical';
+            return 'Spell';
+        })();
+        const baseDamage = Number.isFinite(Number(s.baseDamage)) ? Number(s.baseDamage) : (Number.isFinite(Number(s.baseDmg)) ? Number(s.baseDmg) : 0);
+        const weightsRaw = (s.weights && typeof s.weights === 'object') ? s.weights : null;
+        const w = weightsRaw
+            ? {
+                atk: this.clampNumber(weightsRaw.atk, 0, 1, 0),
+                tech: this.clampNumber(weightsRaw.tech, 0, 1, 0),
+                spell: this.clampNumber(weightsRaw.spell, 0, 1, 0)
+            }
+            : (t === 'Physical'
+                ? { atk: 1, tech: 0, spell: 0 }
+                : (t === 'Technique'
+                    ? { atk: 0, tech: 1, spell: 0 }
+                    : (t === 'Spell'
+                        ? { atk: 0, tech: 0, spell: 1 }
+                        : { atk: 0, tech: 0, spell: 0 })));
+        const canCrit = (s.canCrit === false) ? false : true;
+        const canDodge = (s.canDodge === false) ? false : true;
+        const name = typeof s.name === 'string' ? s.name : (act || 'skill');
+        return { name, damageType: t, baseDamage, weights: w, canCrit, canDodge, tags };
+    },
+
+    skillHasDamagePotential: function(spec, flatAdd) {
+        const s = spec && typeof spec === 'object' ? spec : null;
+        if (!s) return false;
+        const base = Number(s.baseDamage) || 0;
+        const w = s.weights && typeof s.weights === 'object' ? s.weights : {};
+        const sumW = (Number(w.atk) || 0) + (Number(w.tech) || 0) + (Number(w.spell) || 0);
+        const f = Number(flatAdd) || 0;
+        return (base > 0) || (sumW > 0) || (f > 0);
+    },
+
+    computeDamage: function(input) {
+        const o = input && typeof input === 'object' ? input : {};
+        const spec = o.spec && typeof o.spec === 'object' ? o.spec : this.normalizeSkillDamageSpec(null, 'basic');
+        const rng = typeof o.rng === 'function' ? o.rng : null;
+        const defender = o.defender && typeof o.defender === 'object' ? o.defender : {};
+        const attacker = o.attacker && typeof o.attacker === 'object' ? o.attacker : {};
+
+        const baseDamage = Number(spec.baseDamage) || 0;
+        const flatAdd = Number.isFinite(Number(o.flatAdd)) ? Number(o.flatAdd) : 0;
+        const weights = spec.weights && typeof spec.weights === 'object' ? spec.weights : { atk: 0, tech: 0, spell: 0 };
+        const atk = this.getEntityStat(attacker, ['atk'], 0);
+        const tech = this.getEntityStat(attacker, ['techPower', 'tech', 'techniquePower', 'matk'], 0);
+        const spell = this.getEntityStat(attacker, ['spellPower', 'spellDamage', 'spell', 'matk'], 0);
+        const statBonus = (Number(weights.atk) || 0) * atk + (Number(weights.tech) || 0) * tech + (Number(weights.spell) || 0) * spell;
+        const preMult = baseDamage + statBonus + flatAdd;
+
+        const damageType = this.normalizeDamageType(spec.damageType) || 'Spell';
+
+        if (preMult <= 0) {
+            return { damage: 0, breakdown: { kind: 'no_damage', damageType, baseDamage, statBonus, flatAdd } };
+        }
+
+        const systemMult = Number.isFinite(Number(o.systemMult)) ? Math.max(0, Number(o.systemMult)) : 1;
+        const bonusPct = Number.isFinite(Number(o.bonusPct)) ? Number(o.bonusPct) : 0;
+        const bonusMult = 1 + bonusPct;
+
+        let dmg = preMult * systemMult * bonusMult;
+        const breakdown = {
+            kind: 'hit',
+            damageType,
+            baseDamage,
+            statBonus,
+            flatAdd,
+            preMult,
+            systemMult,
+            bonusPct
+        };
+
+        const canCrit = spec.canCrit !== false;
+        if (canCrit) {
+            if (!rng) return { damage: 0, breakdown: { kind: 'rng_missing', damageType } };
+            const critRate = this.getCritRate(attacker);
+            const roll = this.clamp01(rng());
+            const crit = roll < critRate;
+            breakdown.critRate = critRate;
+            breakdown.critRoll = roll;
+            breakdown.crit = crit;
+            if (crit) {
+                const mult = this.getCritMult(attacker);
+                breakdown.critMult = mult;
+                dmg = dmg * mult;
+            }
+        }
+
+        if (damageType !== 'True') {
+            const reduction = this.getDamageReduction(defender);
+            breakdown.damageReduction = reduction;
+            dmg = dmg * (1 - reduction);
+        }
+
+        let final = Math.floor(dmg);
+        if (!Number.isFinite(final)) final = 0;
+        if (final < 1) final = 1;
+        breakdown.final = final;
+        return { damage: final, breakdown };
     },
 
     applyStatusChanges: function(combat, statusChanges) {

@@ -19,12 +19,12 @@ const UI = {
         let html = '';
         notes.forEach(note => {
             html += `
-                <div class="release-note-entry" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #333;">
+                <div class="release-note-entry" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
-                        <span style="font-size:1.1em; font-weight:bold; color:#e0e0e0;">${note.version}</span>
-                        <span style="font-size:0.85em; color:#888;">${note.date}</span>
+                        <span style="font-size:1.1em; font-weight:bold; color:var(--text-main);">${note.version}</span>
+                        <span style="font-size:0.85em; color:var(--text-dim);">${note.date}</span>
                     </div>
-                    <div style="font-size:0.95em; color:#ccc; line-height:1.6;">
+                    <div style="font-size:0.95em; color:var(--text-main); line-height:1.6;">
                         ${note.content}
                     </div>
                 </div>
@@ -50,12 +50,12 @@ const UI = {
         let html = '';
         notes.forEach(note => {
             html += `
-                <div class="release-note-entry" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #333;">
+                <div class="release-note-entry" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
-                        <span style="font-size:1.1em; font-weight:bold; color:#e0e0e0;">${note.version}</span>
-                        <span style="font-size:0.85em; color:#888;">${note.date}</span>
+                        <span style="font-size:1.1em; font-weight:bold; color:var(--text-main);">${note.version}</span>
+                        <span style="font-size:0.85em; color:var(--text-dim);">${note.date}</span>
                     </div>
-                    <div style="font-size:0.95em; color:#ccc; line-height:1.6;">
+                    <div style="font-size:0.95em; color:var(--text-main); line-height:1.6;">
                         ${note.content}
                     </div>
                 </div>
@@ -102,22 +102,22 @@ const UI = {
             ) : "无限制";
 
             html += `
-                <div class="talisman-entry" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 4px;">
+                <div class="talisman-entry">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
                         <span style="font-size:1.1em; font-weight:bold; color:${color};">
                             <span style="display:inline-block; padding:1px 4px; border:1px solid ${color}; font-size:0.7em; margin-right:5px; border-radius:2px;">${t.grade}阶</span>
                             ${t.name}
                         </span>
                         <div style="text-align:right;">
-                            <span style="font-size:0.85em; color:#aaa; display:block;">消耗 ${t.mpCost} MP</span>
-                            ${t.reqLevel ? `<span style="font-size:0.85em; color:#888;">需 ${t.reqLevel}</span>` : ''}
+                            <span class="talisman-meta" style="display:block;">消耗 ${t.mpCost} MP</span>
+                            ${t.reqLevel ? `<span class="talisman-meta">需 ${t.reqLevel}</span>` : ''}
                         </div>
                     </div>
-                    <div style="font-size:0.9em; color:#ccc; margin-bottom:5px;">
-                        <span style="color:#888;">[${cooldownStr}]</span> <span style="color:#aaa;">【用法】</span>${t.desc}
+                    <div class="talisman-desc">
+                        <span class="hint">[${cooldownStr}]</span> <span class="hint">【用法】</span>${t.desc}
                     </div>
                     ${t.talisman && t.talisman.kind ? `
-                    <div style="font-size:0.8em; color:#666; font-family:monospace; margin-top:4px;">
+                    <div class="talisman-code">
                         类型: ${t.talisman.kind} 
                         ${t.talisman.mult ? `| 倍率: ${Math.round(t.talisman.mult*100)}%` : ''}
                         ${t.talisman.element ? `| 属性: ${t.talisman.element}` : ''}
@@ -276,7 +276,7 @@ const UI = {
                 <div class="stat-cell" data-tooltip-text="物理防御力，减免受到的物理伤害。"><span class="label">物防:</span><span class="value">0</span></div>
                 <div class="stat-cell" data-tooltip-text="术法防御力，减免受到的灵术伤害。"><span class="label">魔防:</span><span class="value">0</span></div>
                 
-                <div class="stat-cell" data-tooltip-text="身法速度，决定出手顺序与闪避概率。"><span class="label">速度:</span><span class="value">${speed} ${btn('speed')}</span></div>
+                <div class="stat-cell" data-tooltip-text="身法速度，决定出手顺序与先手优势。"><span class="label">速度:</span><span class="value">${speed} ${btn('speed')}</span></div>
                 <div class="stat-cell" data-tooltip-text="先天灵根属性，影响功法修炼效率与威力。"><span class="label">五行:</span><span class="value">无</span></div>
             </div>
             
@@ -336,6 +336,10 @@ const UI = {
             this.renderMiniInventory();
         }
 
+        if (typeof this.renderEquipmentGrid === 'function') {
+            this.renderEquipmentGrid('equipment-left', { mode: 'left' });
+        }
+
         const affinityList = document.getElementById('affinity-list');
         affinityList.innerHTML = '';
         for (const [dao, val] of Object.entries(gameState.daoAffinity)) {
@@ -350,6 +354,11 @@ const UI = {
         // [V1.9.0 Fix] 恢复实时刷新逻辑，确保战斗/修为变化即时反馈
         this.renderStatsGrid();
         this.renderBattleOverview();
+
+        if (typeof this.renderEquipmentGrid === 'function') {
+            this.renderEquipmentGrid('equipment-left', { mode: 'left' });
+            this.renderEquipmentGrid('equipment-inventory', { mode: 'inventory' });
+        }
         
         // 如果有挂机状态更新，也可以在这里刷新
         if (typeof this.updateHangingStatus === 'function') {
@@ -1395,6 +1404,7 @@ const UI = {
             const btn = document.createElement('button');
             const effect = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[item] : null;
             const isTalisman = effect && effect.type === 'talisman';
+            const isWeapon = effect && effect.type === 'weapon';
             let useHint = '';
             if (isTalisman) {
                 const cd = effect.cooldown && typeof effect.cooldown === 'object' ? effect.cooldown : {};
@@ -1428,8 +1438,13 @@ const UI = {
                     }
                 }
             }
-
-            btn.textContent = useHint ? `使用（${useHint}）` : "使用";
+            if (isWeapon) {
+                const eq = gameState.equipment && typeof gameState.equipment === 'object' ? gameState.equipment : null;
+                const equipped = !!(eq && typeof eq.mainWeapon === 'string' && eq.mainWeapon === item);
+                btn.textContent = equipped ? '卸下' : '装备';
+            } else {
+                btn.textContent = useHint ? `使用（${useHint}）` : "使用";
+            }
             if (useHint) {
                 btn.disabled = true;
                 btn.style.opacity = "0.75";
@@ -1439,6 +1454,76 @@ const UI = {
             card.appendChild(span);
             card.appendChild(btn);
             list.appendChild(card);
+        }
+
+        if (typeof this.renderEquipmentGrid === 'function') {
+            this.renderEquipmentGrid('equipment-inventory', { mode: 'inventory' });
+        }
+    },
+
+    renderEquipmentGrid: function(containerId, opts) {
+        const root = document.getElementById(containerId);
+        if (!root) return;
+
+        const o = opts && typeof opts === 'object' ? opts : {};
+        const eq = gameState.equipment && typeof gameState.equipment === 'object' ? gameState.equipment : {};
+        const items = (typeof GameData !== 'undefined' && GameData.itemConfig && typeof GameData.itemConfig === 'object') ? GameData.itemConfig : {};
+        const slots = [
+            { key: 'mainWeapon', label: '本命器', short: '本命', icon: '🗡' },
+            { key: 'guard', label: '护体', short: '护体', icon: '🛡' },
+            { key: 'armor', label: '身甲', short: '身甲', icon: '🧥' },
+            { key: 'daoTool', label: '道器', short: '道器', icon: '🔮' },
+            { key: 'daoRing1', label: '道环·一', short: '道环', icon: '💍' },
+            { key: 'daoRing2', label: '道环·二', short: '道环', icon: '💍' },
+            { key: 'battlePendant', label: '战佩', short: '战佩', icon: '📿' },
+            { key: 'talismanToken', label: '符令', short: '符令', icon: '📜' },
+            { key: 'aux', label: '辅器', short: '辅器', icon: '🧰' }
+        ];
+
+        root.innerHTML = '';
+        for (let i = 0; i < slots.length; i++) {
+            const s = slots[i];
+            const itemName = typeof eq[s.key] === 'string' && eq[s.key].trim() ? eq[s.key].trim() : null;
+            const itemCfg = itemName && items[itemName] && typeof items[itemName] === 'object' ? items[itemName] : null;
+            const desc = itemCfg && typeof itemCfg.desc === 'string' ? itemCfg.desc : '';
+
+            const el = document.createElement('div');
+            el.className = `equip-slot ${itemName ? 'filled' : 'empty'}`;
+            el.setAttribute('data-slot', s.key);
+
+            const icon = document.createElement('span');
+            icon.className = 'slot-icon';
+            icon.textContent = s.icon;
+
+            const label = document.createElement('span');
+            label.className = 'slot-label';
+            label.textContent = s.short;
+
+            const tag = document.createElement('span');
+            tag.className = 'slot-item';
+            tag.textContent = itemName ? itemName.slice(0, 1) : '';
+
+            el.appendChild(icon);
+            el.appendChild(label);
+            el.appendChild(tag);
+
+            el.title = itemName
+                ? `${s.label}：${itemName}${desc ? `\n${desc}` : ''}`
+                : `${s.label}：未装备`;
+
+            el.onclick = () => {
+                if (o.mode === 'inventory' && itemName && itemCfg && itemCfg.type === 'weapon') {
+                    if (typeof Logic !== 'undefined' && Logic && typeof Logic.requestUseItem === 'function') {
+                        Logic.requestUseItem(itemName);
+                    }
+                    return;
+                }
+                if (typeof UI !== 'undefined' && UI && typeof UI.switchTab === 'function') {
+                    UI.switchTab('inventory');
+                }
+            };
+
+            root.appendChild(el);
         }
     },
 
@@ -2049,8 +2134,77 @@ const UI = {
                 }
             }
         }
-        
-        this.currentBattleLog.content.appendChild(div);
+
+        const formatPct = (v) => {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '0%';
+            return `${Math.round(n * 1000) / 10}%`;
+        };
+        const formatNum = (v) => {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return '0';
+            return String(Math.round(n * 100) / 100);
+        };
+        const formatBreakdown = (b) => {
+            const x = b && typeof b === 'object' ? b : null;
+            if (!x) return '';
+            const kind = typeof x.kind === 'string' ? x.kind : '';
+            if (kind === 'dot') {
+                return `DOT(${x.statusId || ''})：基础${formatNum(x.rawDamage)} 减伤${formatPct(x.damageReduction)} 最终${formatNum(x.final)}`;
+            }
+            if (kind === 'no_damage') {
+                return `无伤害：基础${formatNum(x.baseDamage)} 属性${formatNum(x.statBonus)} 平加${formatNum(x.flatAdd)}`;
+            }
+            if (kind === 'immune') {
+                return `免疫：伤害为0`;
+            }
+            const lines = [];
+            if (x.preMult !== undefined) lines.push(`基础${formatNum(x.baseDamage)} + 属性${formatNum(x.statBonus)} + 平加${formatNum(x.flatAdd)} = ${formatNum(x.preMult)}`);
+            if (x.systemMult !== undefined || x.bonusPct !== undefined) lines.push(`倍率×${formatNum(x.systemMult)} 加成${formatPct(x.bonusPct)}`);
+            if (x.critRate !== undefined) {
+                const critLine = `暴击${x.crit ? '是' : '否'}：率${formatPct(x.critRate)} 掷${formatPct(x.critRoll)}${x.crit && x.critMult ? ` 倍×${formatNum(x.critMult)}` : ''}`;
+                lines.push(critLine);
+            }
+            if (x.damageType !== 'True' && x.damageReduction !== undefined) lines.push(`减伤${formatPct(x.damageReduction)}（真伤无视）`);
+            if (x.final !== undefined) lines.push(`最终${formatNum(x.final)}`);
+            return lines.join('\n');
+        };
+
+        const breakdownBlocks = [];
+        if (meta && meta.breakdown && typeof meta.breakdown === 'object') {
+            breakdownBlocks.push({ title: '', breakdown: meta.breakdown });
+        } else if (meta && Array.isArray(meta.hits)) {
+            meta.hits.forEach((h, idx) => {
+                if (!h || typeof h !== 'object') return;
+                if (!h.breakdown || typeof h.breakdown !== 'object') return;
+                const t = typeof h.targetId === 'string' ? h.targetId : '';
+                breakdownBlocks.push({ title: `第${idx + 1}击${t ? ` → ${t}` : ''}`, breakdown: h.breakdown });
+            });
+        }
+
+        const row = document.createElement('div');
+        row.appendChild(div);
+
+        if (breakdownBlocks.length > 0) {
+            div.style.cursor = 'pointer';
+            const detail = document.createElement('div');
+            detail.style.display = 'none';
+            detail.style.whiteSpace = 'pre-wrap';
+            detail.style.margin = '4px 0 6px 14px';
+            detail.style.padding = '6px 8px';
+            detail.style.borderLeft = '2px solid rgba(255,255,255,0.25)';
+            detail.style.background = 'rgba(255,255,255,0.04)';
+            detail.style.borderRadius = '4px';
+            detail.style.fontSize = '0.86em';
+            detail.style.color = '#c9c9c9';
+            detail.textContent = breakdownBlocks.map(b => `${b.title ? `${b.title}\n` : ''}${formatBreakdown(b.breakdown)}`).join('\n\n');
+            div.onclick = () => {
+                detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+            };
+            row.appendChild(detail);
+        }
+
+        this.currentBattleLog.content.appendChild(row);
         if (this.currentBattleLog.content.children.length > 60) {
             this.currentBattleLog.content.removeChild(this.currentBattleLog.content.firstChild);
         }

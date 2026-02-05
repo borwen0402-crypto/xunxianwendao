@@ -122,14 +122,42 @@ function enterGame() {
         if (UI && typeof UI.initGlobalTooltip === 'function') UI.initGlobalTooltip();
         if (UI && typeof UI.ensureRitualUI === 'function') UI.ensureRitualUI();
     
-    // 确保 settings 存在，防止新用户报错
+        // 确保 settings 存在，防止新用户报错
         if (!gameState.settings) {
-            gameState.settings = { pauseOnEvent: true };
+            gameState.settings = { pauseOnEvent: true, theme: '' };
         }
+        if (!Object.prototype.hasOwnProperty.call(gameState.settings, 'theme')) gameState.settings.theme = '';
         
         if (document.getElementById('pause-on-event')) {
             document.getElementById('pause-on-event').checked = gameState.settings.pauseOnEvent;
         }
+
+        const applyTheme = (nextTheme) => {
+            const body = document.body;
+            const t = (nextTheme === 'stealth' || nextTheme === 'clean') ? nextTheme : '';
+            if (t) body.setAttribute('data-theme', t);
+            else body.removeAttribute('data-theme');
+
+            if (gameState.settings && typeof gameState.settings === 'object') gameState.settings.theme = t;
+            try { localStorage.setItem('xiuxian_theme', t); } catch (e) {}
+
+            const btnStealth = document.getElementById('btn-theme-toggle');
+            const btnClean = document.getElementById('btn-theme-clean');
+            if (btnStealth) btnStealth.textContent = (t === 'stealth') ? '摸鱼模式：开' : '摸鱼模式：关';
+            if (btnClean) btnClean.textContent = (t === 'clean') ? '清爽UI：开' : '清爽UI：关';
+        };
+
+        const savedTheme = (() => {
+            const fromSave = gameState.settings && typeof gameState.settings === 'object' ? gameState.settings.theme : '';
+            if (fromSave === 'stealth' || fromSave === 'clean') return fromSave;
+            try {
+                const t = localStorage.getItem('xiuxian_theme');
+                return (t === 'stealth' || t === 'clean') ? t : '';
+            } catch (e) {
+                return '';
+            }
+        })();
+        applyTheme(savedTheme);
 
         // 恢复挂机状态 UI (如果加载了挂机状态)
         if (gameState.isHanging) {
@@ -255,11 +283,37 @@ function initEventListeners() {
     if (btnTheme) {
         btnTheme.addEventListener('click', () => {
             const body = document.body;
-            const current = body.getAttribute('data-theme');
+            const current = body.getAttribute('data-theme') || '';
             const next = current === 'stealth' ? '' : 'stealth';
-            body.setAttribute('data-theme', next);
-            // Optional: Save preference
-            // localStorage.setItem('xiuxian_theme', next);
+            if (typeof gameState !== 'undefined' && gameState && typeof gameState.settings === 'object') {
+                gameState.settings.theme = next;
+            }
+            try { localStorage.setItem('xiuxian_theme', next); } catch (e) {}
+            if (next) body.setAttribute('data-theme', next);
+            else body.removeAttribute('data-theme');
+            btnTheme.textContent = next === 'stealth' ? '摸鱼模式：开' : '摸鱼模式：关';
+            const btnClean = document.getElementById('btn-theme-clean');
+            if (btnClean) btnClean.textContent = next === 'clean' ? '清爽UI：开' : '清爽UI：关';
+            if (typeof gameState.save === 'function') gameState.save();
+        });
+    }
+
+    const btnClean = document.getElementById('btn-theme-clean');
+    if (btnClean) {
+        btnClean.addEventListener('click', () => {
+            const body = document.body;
+            const current = body.getAttribute('data-theme') || '';
+            const next = current === 'clean' ? '' : 'clean';
+            if (typeof gameState !== 'undefined' && gameState && typeof gameState.settings === 'object') {
+                gameState.settings.theme = next;
+            }
+            try { localStorage.setItem('xiuxian_theme', next); } catch (e) {}
+            if (next) body.setAttribute('data-theme', next);
+            else body.removeAttribute('data-theme');
+            btnClean.textContent = next === 'clean' ? '清爽UI：开' : '清爽UI：关';
+            const btnStealth = document.getElementById('btn-theme-toggle');
+            if (btnStealth) btnStealth.textContent = next === 'stealth' ? '摸鱼模式：开' : '摸鱼模式：关';
+            if (typeof gameState.save === 'function') gameState.save();
         });
     }
 
@@ -644,29 +698,24 @@ function initEventListeners() {
 
         const names = Object.keys(monsters).sort();
         if (names.length === 0) {
-            listMonsterGuide.innerHTML = '<div style="padding:10px; color:#888;">暂无怪物数据</div>';
+            listMonsterGuide.innerHTML = '<div style="padding:10px; color:var(--text-dim);">暂无怪物数据</div>';
             return;
         }
 
         names.forEach(name => {
             const btn = document.createElement('div');
             btn.textContent = name;
-            btn.style.padding = '8px 12px';
-            btn.style.cursor = 'pointer';
-            btn.style.borderBottom = '1px solid #333';
-            btn.style.color = '#aaa';
-            btn.onmouseover = () => btn.style.background = '#333';
-            btn.onmouseout = () => btn.style.background = '';
+            btn.className = 'monster-guide-item';
             
             btn.onclick = () => {
                 // Highlight
-                Array.from(listMonsterGuide.children).forEach(c => c.style.color = '#aaa');
-                btn.style.color = '#fff';
+                Array.from(listMonsterGuide.children).forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
                 
                 // Show Details
                 const m = monsters[name];
                 let html = `<h2>${name}</h2>`;
-                if (m.desc) html += `<p style="color:#aaa; font-style:italic;">${m.desc}</p>`;
+                if (m.desc) html += `<p style="color:var(--text-dim); font-style:italic;">${m.desc}</p>`;
                 
                 // Show locations
                 let locations = [];
@@ -678,10 +727,10 @@ function initEventListeners() {
                     });
                 }
                 if (locations.length > 0) {
-                    html += `<div style="margin-top:5px; color:#aaa; font-size:0.95em;">出没地点: <span style="color:#4cd137;">${locations.join('、')}</span></div>`;
+                    html += `<div style="margin-top:5px; color:var(--text-dim); font-size:0.95em;">出没地点: <span class="monster-guide-loc">${locations.join('、')}</span></div>`;
                 }
                 
-                html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0; background:#222; padding:10px; border-radius:4px;">
+                html += `<div class="monster-guide-stats">
                     <div>境界: ${m.level || '未知'}</div>
                     <div>种族: ${m.race || '未知'}</div>
                     <div>生命: ${m.hp || '?'}</div>
@@ -692,17 +741,17 @@ function initEventListeners() {
 
                 html += `<h3>拥有技能</h3>`;
                 if (m.skills && m.skills.length) {
-                    html += `<ul style="list-style:none; padding:0;">`;
+                    html += `<ul class="monster-guide-skills">`;
                     m.skills.forEach(skillName => {
                         const desc = window.getSkillDescription ? window.getSkillDescription(skillName) : "暂无描述";
-                        html += `<li style="margin-bottom:12px; background:#2c3e50; padding:8px; border-radius:4px;">
-                            <strong style="color:#e74c3c;">${skillName}</strong>
-                            <div style="font-size:0.9em; color:#ccc; margin-top:4px;">${desc}</div>
+                        html += `<li class="monster-guide-skill">
+                            <strong class="monster-guide-skill-name">${skillName}</strong>
+                            <div class="monster-guide-skill-desc">${desc}</div>
                         </li>`;
                     });
                     html += `</ul>`;
                 } else {
-                    html += `<p style="color:#666;">无特殊技能</p>`;
+                    html += `<p style="color:var(--text-dim);">无特殊技能</p>`;
                 }
                 
                 if (detailsMonsterGuide) detailsMonsterGuide.innerHTML = html;

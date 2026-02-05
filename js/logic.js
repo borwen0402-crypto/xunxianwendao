@@ -431,7 +431,52 @@ const Rules = {
         
         // 初始化战斗状态
         if (typeof CombatEngine !== 'undefined' && CombatEngine && typeof CombatEngine.createCombat === 'function') {
-            const p = { hp: gameState.hp, mp: gameState.mp, maxHp: gameState.maxHp, maxMp: gameState.maxMp, atk: gameState.atk, matk: gameState.matk, realm: gameState.realm, subRealm: gameState.subRealm, activeDao: gameState.activeDao, daoType: gameState.daoType, daoBranch: gameState.daoBranch, ghosts: Array.isArray(gameState.ghosts) ? gameState.ghosts : [], soulUrn: gameState.soulUrn && typeof gameState.soulUrn === 'object' ? gameState.soulUrn : null, statuses: [] };
+            const p = {
+                hp: gameState.hp,
+                mp: gameState.mp,
+                maxHp: gameState.maxHp,
+                maxMp: gameState.maxMp,
+                atk: gameState.atk,
+                matk: gameState.matk,
+                techPower: gameState.techPower,
+                spellPower: gameState.spellPower,
+                speed: gameState.speed,
+                critRate: gameState.critRate,
+                critMult: gameState.critMult,
+                damageReduction: gameState.damageReduction,
+                interruptResist: gameState.interruptResist,
+                realm: gameState.realm,
+                subRealm: gameState.subRealm,
+                activeDao: gameState.activeDao,
+                daoType: gameState.daoType,
+                daoBranch: gameState.daoBranch,
+                ghosts: Array.isArray(gameState.ghosts) ? gameState.ghosts : [],
+                soulUrn: gameState.soulUrn && typeof gameState.soulUrn === 'object' ? gameState.soulUrn : null,
+                statuses: []
+            };
+            const clamp = (v, lo, hi, fb) => {
+                const n = Number(v);
+                if (!Number.isFinite(n)) return fb;
+                if (n < lo) return lo;
+                if (n > hi) return hi;
+                return n;
+            };
+            const eq = gameState.equipment && typeof gameState.equipment === 'object' ? gameState.equipment : null;
+            const mainWeaponName = eq && typeof eq.mainWeapon === 'string' && eq.mainWeapon.trim() ? eq.mainWeapon.trim() : null;
+            const weaponItem = (mainWeaponName && typeof GameData !== 'undefined' && GameData.itemConfig && GameData.itemConfig[mainWeaponName] && GameData.itemConfig[mainWeaponName].type === 'weapon')
+                ? GameData.itemConfig[mainWeaponName]
+                : null;
+            const weapon = weaponItem && weaponItem.weapon && typeof weaponItem.weapon === 'object' ? weaponItem.weapon : null;
+            const base = weapon && weapon.base && typeof weapon.base === 'object' ? weapon.base : null;
+            if (base) {
+                p.atk = (Number(p.atk) || 0) + (Number(base.physicalPower) || 0);
+                p.techPower = (Number(p.techPower) || 0) + (Number(base.techniquePower) || 0);
+                p.spellPower = (Number(p.spellPower) || 0) + (Number(base.spellPower) || 0);
+                p.critRate = clamp((Number(p.critRate) || 0) + (Number(base.critRate) || 0), 0, 1, 0);
+                const cm = Number(base.critMult);
+                if (Number.isFinite(cm)) p.critMult = clamp(cm, 1, 5, 1.5);
+                p.damageReduction = clamp((Number(p.damageReduction) || 0) + (Number(base.damageReduction) || 0), 0, 0.8, 0);
+            }
             const mapId = map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map.name || '未知');
             const yinYang = (gameState.mapStates && gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object') ? (Number(gameState.mapStates[mapId].yinYang) || 0) : 0;
             const env = { mapId, difficulty: Number.isFinite(Number(map.dangerLevel)) ? Number(map.dangerLevel) : 1, yinYang, world: (map && typeof map.world === 'string') ? map.world : 'yang' };
@@ -1342,6 +1387,24 @@ const Logic = {
             return false;
         }
 
+        if (effect.type === 'weapon') {
+            if (!gameState.equipment || typeof gameState.equipment !== 'object') {
+                gameState.equipment = { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
+            }
+            const cur = typeof gameState.equipment.mainWeapon === 'string' ? gameState.equipment.mainWeapon : null;
+            gameState.equipment.mainWeapon = (cur === name) ? null : name;
+
+            if (o.silent !== true && typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') {
+                UI.addLog(gameState.equipment.mainWeapon ? `已装备本命器【${name}】。` : `已卸下本命器【${name}】。`, 'sys');
+            }
+            if (o.silent !== true && typeof UI !== 'undefined' && UI) {
+                if (typeof UI.renderInventory === 'function') UI.renderInventory();
+                if (typeof UI.updateStatsUI === 'function') UI.updateStatsUI();
+            }
+            if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
+            return true;
+        }
+
         if (effect.type === 'talisman') {
             const inCombat = !!gameState.combat;
             const mpCost = Number.isFinite(Number(effect.mpCost)) ? Math.max(0, Math.floor(Number(effect.mpCost))) : 0;
@@ -1615,6 +1678,50 @@ const Logic = {
              } else {
                  if (typeof UI !== 'undefined' && UI.addLog) UI.addLog(`你尚未分配属性点，药力在体内空转了一圈。`, 'sys');
              }
+        }
+        if (effect.effect === 'forge_main_weapon') {
+            const wc = (typeof GameData !== 'undefined' && GameData && GameData.weaponConfig && typeof GameData.weaponConfig === 'object') ? GameData.weaponConfig : {};
+            const realm = typeof gameState.realm === 'string' && gameState.realm.trim() ? gameState.realm.trim() : null;
+            const pickList = (() => {
+                const direct = realm && Array.isArray(wc[realm]) ? wc[realm] : null;
+                if (direct && direct.length) return direct;
+                const fallbackOrder = ['修士', '寻道', '入道', '悟道', '半步地仙', '凡人'];
+                for (let i = 0; i < fallbackOrder.length; i++) {
+                    const r = fallbackOrder[i];
+                    if (Array.isArray(wc[r]) && wc[r].length) return wc[r];
+                }
+                return [];
+            })();
+            if (!pickList.length) {
+                if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog('暂无可打造的本命器。', 'sys');
+                if (o.silent !== true && typeof UI !== 'undefined' && UI && typeof UI.renderInventory === 'function') UI.renderInventory();
+                if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
+                return true;
+            }
+            gameState._lastRngConsumerTag = 'forge.mainWeapon.pick';
+            const idx = Math.floor(gameState.rng() * pickList.length);
+            const raw = pickList[idx] || pickList[0];
+            const weaponName = (raw && typeof raw === 'object' && typeof raw.name === 'string') ? raw.name : (typeof raw === 'string' ? raw : null);
+            if (!weaponName) {
+                if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog('本命器打造失败：数据异常。', 'sys');
+                if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
+                return true;
+            }
+            if (!gameState.inventory || typeof gameState.inventory !== 'object') gameState.inventory = {};
+            gameState.inventory[weaponName] = (Number(gameState.inventory[weaponName]) || 0) + 1;
+            if (!gameState.equipment || typeof gameState.equipment !== 'object') {
+                gameState.equipment = { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
+            }
+            if (!gameState.equipment.mainWeapon) gameState.equipment.mainWeapon = weaponName;
+            if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') {
+                UI.addLog(`本命器已成：获得【${weaponName}】${gameState.equipment.mainWeapon === weaponName ? '（已装备）' : ''}。`, 'sys');
+            }
+            if (o.silent !== true && typeof UI !== 'undefined' && UI) {
+                if (typeof UI.renderInventory === 'function') UI.renderInventory();
+                if (typeof UI.updateStatsUI === 'function') UI.updateStatsUI();
+            }
+            if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
+            return true;
         }
 
         const delta = {
