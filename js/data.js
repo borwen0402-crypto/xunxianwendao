@@ -232,6 +232,33 @@ const GameData = {
     // 3. 更新公告 (V1.9 新增)
     releaseNotes: [
         {
+            version: "v2.0.7 更新公告",
+            date: "2026-02-05",
+            title: "界面优化与怪物修正",
+            content: `
+                <div style="text-align:left;">
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、界面交互优化</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>窗口关闭优化</b>：现在可以通过按 ESC 键或点击窗口外部区域快速关闭各类弹窗（如怪物图鉴、符箓手册等），操作更顺滑。</li>
+                        <li><b>图鉴信息完善</b>：怪物图鉴现已显示怪物的“出没地点”，方便道友寻找特定妖物。</li>
+                        <li><b>装备界面调整</b>：优化了装备栏布局，采用左侧总览+右侧背包的双栏设计，并新增了第二个道环装备位，提升配装策略深度。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、视觉体验升级</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>清爽模式 (Clean Mode)</b>：修复了清爽模式下部分文字（如怪物图鉴、技能描述）看不清的问题，优化了阅读体验。</li>
+                        <li><b>摸鱼模式 (Stealth Mode)</b>：调整了摸鱼模式的配色，回归纯粹的黑灰极简风格，降低屏幕亮度，更加隐蔽。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">三、数值与逻辑修正</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>怪物伤害修复</b>：修复了怪物攻击力（Atk/Matk）初始化异常导致挂机战斗中怪物伤害一直为 0 的严重 Bug。</li>
+                        <li><b>技能分类明确</b>：完善了全技能的伤害类型标签（物理/法术），现在乾坤道主要造成物理伤害，阴阳道与鬼道技能（如控魂、阴气侵体）将正确判定为法术伤害。</li>
+                    </ul>
+                </div>
+            `
+        },
+        {
             version: "v2.0.6 热更新",
             date: "2026-02-04",
             title: "怪物技能与测试工具修复",

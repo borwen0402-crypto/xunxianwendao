@@ -11,6 +11,30 @@
     --nav-bg: #1e1e1e;
 }
 
+[data-theme="clean"] {
+    --bg-color: #f0f2f5;
+    --panel-bg: #ffffff;
+    --panel-border: 1px solid #d1d5db;
+    --text-main: #1f2937;
+    --text-dim: #6b7280;
+    --accent: #0ea5e9;
+    --accent-hover: #0284c7;
+    --danger: #ef4444;
+    --success: #10b981;
+    --nav-bg: #ffffff;
+    --border: #e5e7eb;
+}
+
+[data-theme="clean"] .log-event { color: #1f2937; }
+[data-theme="clean"] .log-crit { color: #dc2626; font-weight: bold; }
+[data-theme="clean"] .log-item { color: #059669; }
+[data-theme="clean"] .log-env { color: #6b7280; font-style: italic; }
+[data-theme="clean"] .log-npc { color: #d97706; }
+
+[data-theme="clean"] .monster-guide-item { background: #f9fafb; border: 1px solid #e5e7eb; color: #374151; }
+[data-theme="clean"] .monster-guide-item:hover { background: #f3f4f6; border-color: #0ea5e9; }
+[data-theme="clean"] .monster-guide-item.active { background: #eff6ff; border-color: #0ea5e9; color: #1d4ed8; }
+
 [data-theme="stealth"] {
     --bg-color: #0f0f10;
     --panel-bg: rgba(20, 20, 22, 0.98);

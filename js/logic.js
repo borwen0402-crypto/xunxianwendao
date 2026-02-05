@@ -425,7 +425,8 @@ const Rules = {
                 name: name, // Ensure name is explicitly set
                 ...monsterProto,
                 hp: monsterProto.hp, // Instance HP
-                maxHp: monsterProto.hp
+                maxHp: monsterProto.hp,
+                matk: monsterProto.matk || monsterProto.atk
             });
         }
         
