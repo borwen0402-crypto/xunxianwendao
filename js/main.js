@@ -668,6 +668,19 @@ function initEventListeners() {
                 let html = `<h2>${name}</h2>`;
                 if (m.desc) html += `<p style="color:#aaa; font-style:italic;">${m.desc}</p>`;
                 
+                // Show locations
+                let locations = [];
+                if (typeof GameData !== 'undefined' && GameData.mapConfig) {
+                    Object.values(GameData.mapConfig).forEach(map => {
+                        if (map.monsterPool && map.monsterPool.includes(name)) {
+                            locations.push(map.name);
+                        }
+                    });
+                }
+                if (locations.length > 0) {
+                    html += `<div style="margin-top:5px; color:#aaa; font-size:0.95em;">出没地点: <span style="color:#4cd137;">${locations.join('、')}</span></div>`;
+                }
+                
                 html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0; background:#222; padding:10px; border-radius:4px;">
                     <div>境界: ${m.level || '未知'}</div>
                     <div>种族: ${m.race || '未知'}</div>
@@ -714,6 +727,45 @@ function initEventListeners() {
             });
         });
     }
+
+    // === Global Modal Behavior (ESC & Click Outside) ===
+    const closeAllModals = () => {
+        // 1. Release Notes
+        const releaseModal = document.getElementById('release-note-modal');
+        if (releaseModal && !releaseModal.classList.contains('hidden')) releaseModal.classList.add('hidden');
+
+        // 2. Talisman Guide
+        const talismanModal = document.getElementById('talisman-guide-modal');
+        if (talismanModal && !talismanModal.classList.contains('hidden')) talismanModal.classList.add('hidden');
+
+        // 3. Monster Guide
+        const monsterModal = document.getElementById('modal-monster-guide');
+        if (monsterModal && monsterModal.style.display !== 'none') monsterModal.style.display = 'none';
+
+        // 4. Stats Modifier
+        if (typeof window.closeStatsModifier === 'function') window.closeStatsModifier();
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
+
+    window.addEventListener('click', (e) => {
+        // Check if click target is a modal background (which usually means clicking outside content)
+        // Release Note
+        const releaseModal = document.getElementById('release-note-modal');
+        if (releaseModal && e.target === releaseModal) releaseModal.classList.add('hidden');
+
+        // Talisman Guide
+        const talismanModal = document.getElementById('talisman-guide-modal');
+        if (talismanModal && e.target === talismanModal) talismanModal.classList.add('hidden');
+
+        // Monster Guide
+        const monsterModal = document.getElementById('modal-monster-guide');
+        if (monsterModal && e.target === monsterModal) monsterModal.style.display = 'none';
+    });
 }
 
 // 页面加载完成后初始化
