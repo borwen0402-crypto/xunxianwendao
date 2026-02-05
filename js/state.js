@@ -263,6 +263,8 @@ const gameState = {
             activeDao: this.activeDao ?? "随机",
             daoAffinity: deepClone(this.daoAffinity && typeof this.daoAffinity === 'object' ? this.daoAffinity : {}),
             inventory: deepClone(this.inventory && typeof this.inventory === 'object' ? this.inventory : {}),
+            itemInstances: deepClone(this.itemInstances && typeof this.itemInstances === 'object' ? this.itemInstances : {}),
+            affixState: deepClone(this.affixState && typeof this.affixState === 'object' ? this.affixState : {}),
             equipment: deepClone(this.equipment && typeof this.equipment === 'object' ? this.equipment : { mainWeapon: null }),
             settings: deepClone(this.settings && typeof this.settings === 'object' ? this.settings : { pauseOnEvent: true }),
             story: deepClone(this.story && typeof this.story === 'object' ? this.story : {}),
@@ -291,6 +293,7 @@ const gameState = {
         this.spellPower = Number(b.spellPower) || (Number(b.matk) || 0);
         this.speed = Number(b.speed) || 10;
         this.critRate = Math.max(0, Math.min(1, Number(b.critRate) || 0));
+        if (this.critRate <= 0) this.critRate = 0.05;
         this.critMult = Math.max(1, Math.min(5, Number(b.critMult) || 1.5));
         this.damageReduction = Math.max(0, Math.min(0.8, Number(b.damageReduction) || 0));
         this.interruptResist = Math.max(0, Math.min(1, Number(b.interruptResist) || 0));
@@ -310,6 +313,8 @@ const gameState = {
 
         this.daoAffinity = b.daoAffinity && typeof b.daoAffinity === 'object' ? JSON.parse(JSON.stringify(b.daoAffinity)) : {};
         this.inventory = b.inventory && typeof b.inventory === 'object' ? JSON.parse(JSON.stringify(b.inventory)) : {};
+        this.itemInstances = b.itemInstances && typeof b.itemInstances === 'object' ? JSON.parse(JSON.stringify(b.itemInstances)) : {};
+        this.affixState = b.affixState && typeof b.affixState === 'object' ? JSON.parse(JSON.stringify(b.affixState)) : {};
         this.equipment = b.equipment && typeof b.equipment === 'object' ? JSON.parse(JSON.stringify(b.equipment)) : { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
         this.settings = b.settings && typeof b.settings === 'object' ? JSON.parse(JSON.stringify(b.settings)) : { pauseOnEvent: true };
         this.story = b.story && typeof b.story === 'object' ? JSON.parse(JSON.stringify(b.story)) : {};
@@ -348,7 +353,7 @@ const gameState = {
     techPower: 10,
     spellPower: 10,
     speed: 10,
-    critRate: 0,
+    critRate: 0.05,
     critMult: 1.5,
     damageReduction: 0,
     interruptResist: 0,
@@ -374,6 +379,8 @@ const gameState = {
     ghosts: [],
     soulUrn: { level: 1, capacity: 1, efficiency: 1, stability: 50 },
     inventory: {}, // 背包
+    itemInstances: {},
+    affixState: { nextBattleAtk: { stacks: 0, pct: 0 }, streakRecoveryPct: 0, mainWeaponKills: {} },
     equipment: { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null },
     settings: { pauseOnEvent: true, theme: '' }, // 设置
 
@@ -431,6 +438,8 @@ const gameState = {
             ghosts: this.ghosts,
             soulUrn: this.soulUrn,
             inventory: this.inventory,
+            itemInstances: this.itemInstances,
+            affixState: this.affixState,
             equipment: this.equipment,
             settings: this.settings,
             story: this.story,
@@ -463,6 +472,13 @@ const gameState = {
                 
                 // 兼容性修复：确保核心对象存在
                 if (!this.inventory || typeof this.inventory !== 'object') this.inventory = {};
+                if (!this.itemInstances || typeof this.itemInstances !== 'object') this.itemInstances = {};
+                if (!this.affixState || typeof this.affixState !== 'object') this.affixState = { nextBattleAtk: { stacks: 0, pct: 0 }, streakRecoveryPct: 0, mainWeaponKills: {} };
+                if (!this.affixState.nextBattleAtk || typeof this.affixState.nextBattleAtk !== 'object') this.affixState.nextBattleAtk = { stacks: 0, pct: 0 };
+                if (!Object.prototype.hasOwnProperty.call(this.affixState.nextBattleAtk, 'stacks')) this.affixState.nextBattleAtk.stacks = 0;
+                if (!Object.prototype.hasOwnProperty.call(this.affixState.nextBattleAtk, 'pct')) this.affixState.nextBattleAtk.pct = 0;
+                if (!Object.prototype.hasOwnProperty.call(this.affixState, 'streakRecoveryPct')) this.affixState.streakRecoveryPct = 0;
+                if (!this.affixState.mainWeaponKills || typeof this.affixState.mainWeaponKills !== 'object') this.affixState.mainWeaponKills = {};
                 if (!this.equipment || typeof this.equipment !== 'object') this.equipment = { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
                 if (!Object.prototype.hasOwnProperty.call(this.equipment, 'daoRing1')) this.equipment.daoRing1 = this.equipment.daoRing ?? null;
                 if (!Object.prototype.hasOwnProperty.call(this.equipment, 'daoRing2')) this.equipment.daoRing2 = null;
@@ -484,13 +500,14 @@ const gameState = {
                 this.replay.lastAction = null;
                 if (!Object.prototype.hasOwnProperty.call(this, 'techPower')) this.techPower = Number(this.matk) || 0;
                 if (!Object.prototype.hasOwnProperty.call(this, 'spellPower')) this.spellPower = Number(this.matk) || 0;
-                if (!Object.prototype.hasOwnProperty.call(this, 'critRate')) this.critRate = 0;
+        if (!Object.prototype.hasOwnProperty.call(this, 'critRate')) this.critRate = 0.05;
                 if (!Object.prototype.hasOwnProperty.call(this, 'critMult')) this.critMult = 1.5;
                 if (!Object.prototype.hasOwnProperty.call(this, 'damageReduction')) this.damageReduction = 0;
                 if (!Object.prototype.hasOwnProperty.call(this, 'interruptResist')) this.interruptResist = 0;
                 this.techPower = Number(this.techPower) || (Number(this.matk) || 0);
                 this.spellPower = Number(this.spellPower) || (Number(this.matk) || 0);
                 this.critRate = Math.max(0, Math.min(1, Number(this.critRate) || 0));
+                if (this.critRate <= 0) this.critRate = 0.05;
                 this.critMult = Math.max(1, Math.min(5, Number(this.critMult) || 1.5));
                 this.damageReduction = Math.max(0, Math.min(0.8, Number(this.damageReduction) || 0));
                 this.interruptResist = Math.max(0, Math.min(1, Number(this.interruptResist) || 0));
@@ -534,6 +551,7 @@ const gameState = {
                 }
                 
                 this.username = username;
+                if (typeof this.rehydrateItemInstances === 'function') this.rehydrateItemInstances();
                 UI.addLog(`欢迎回来，${username}。`, "sys");
                 return true;
             } catch (e) {
@@ -541,6 +559,72 @@ const gameState = {
             }
         }
         return false;
+    },
+
+    rehydrateItemInstances: function() {
+        if (typeof GameData === 'undefined' || !GameData) return false;
+        if (!GameData.itemConfig || typeof GameData.itemConfig !== 'object') GameData.itemConfig = {};
+        const instMap = this.itemInstances && typeof this.itemInstances === 'object' ? this.itemInstances : {};
+        const keys = Object.keys(instMap);
+        if (!keys.length) return true;
+
+        const fmtPct = (v) => `${Math.round(Number(v) * 1000) / 10}%`;
+        const fmtAffix = (a) => {
+            const obj = a && typeof a === 'object' ? a : null;
+            if (!obj) return null;
+            const id = typeof obj.id === 'string' ? obj.id : '';
+            const label = typeof obj.label === 'string' ? obj.label : '';
+            const v = Number(obj.value);
+            if (!Number.isFinite(v)) return null;
+            if (id === 'atk_pct') return `${label} +${fmtPct(v)}`;
+            if (id === 'hp_pct') return `${label} +${fmtPct(v)}`;
+            if (id === 'dr_pct') return `${label} +${fmtPct(v)}`;
+            if (id === 'critdmg_pct') return `${label} +${fmtPct(v)}`;
+            if (id === 'open_2r_atk') return `开战前2回合 伤害 +${fmtPct(v)}`;
+            if (id === 'enemy_lowhp_atk') return `敌人≤30%HP 伤害 +${fmtPct(v)}`;
+            if (id === 'self_lowhp_atk') return `自身≤30%HP 伤害 +${fmtPct(v)}`;
+            if (id === 'after_5r_atk') return `第5回合后 伤害 +${fmtPct(v)}`;
+            if (id === 'kill_heal_hp') return `击杀回复 +${fmtPct(v)}HP`;
+            if (id === 'kill_nextbattle_atk') return `击杀后下一场 伤害 +${fmtPct(v)}（可叠）`;
+            if (id === 'streak_recovery') return `连战恢复效率 +${fmtPct(v)}`;
+            if (id === 'bound_critdmg') return `仅本命器装备时 暴伤 +${fmtPct(v)}`;
+            if (id === 'growth_kills_atk') return `每击杀100名敌人 伤害 +${fmtPct(v)}（上限）`;
+            if (id === 'awakening_boost_conditional') return `觉醒后 条件词条效果 +${fmtPct(v)}`;
+            return label ? `${label} +${fmtPct(v)}` : null;
+        };
+        const resolveBaseWeapon = (baseName) => {
+            const name = typeof baseName === 'string' ? baseName : '';
+            if (!name) return null;
+            const baseItem = GameData.itemConfig && GameData.itemConfig[name] && GameData.itemConfig[name].type === 'weapon' ? GameData.itemConfig[name] : null;
+            const w = baseItem && baseItem.weapon && typeof baseItem.weapon === 'object' ? baseItem.weapon : null;
+            return w;
+        };
+
+        for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (GameData.itemConfig[k]) continue;
+            const meta = instMap[k];
+            const baseName = meta && typeof meta.baseName === 'string' ? meta.baseName : '';
+            const weapon = resolveBaseWeapon(baseName);
+            if (!weapon) continue;
+            const base = weapon.base && typeof weapon.base === 'object' ? weapon.base : {};
+            const aff = Array.isArray(meta.affixes) ? meta.affixes : [];
+            const lines = [];
+            for (let j = 0; j < aff.length; j++) {
+                const s = fmtAffix(aff[j]);
+                if (s) lines.push(s);
+            }
+            const descBase = typeof (GameData.itemConfig[baseName] && GameData.itemConfig[baseName].desc) === 'string'
+                ? GameData.itemConfig[baseName].desc
+                : baseName;
+            const desc = lines.length ? `${descBase}\n` + lines.map(x => `- ${x}`).join('\n') : descBase;
+            GameData.itemConfig[k] = {
+                type: 'weapon',
+                desc,
+                weapon: { ...weapon, base: { ...base }, rolledAffixes: aff, instanceKey: k, baseName }
+            };
+        }
+        return true;
     },
 
     applyWorldUpdate: function(update, meta) {

@@ -800,6 +800,50 @@ body {
     margin-bottom: 8px;
 }
 
+/* D-pad Map Layout */
+.map-dpad-container {
+    display: grid;
+    grid-template-areas: 
+        ". top ." 
+        "left center right" 
+        ". bottom .";
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.map-btn {
+    min-width: 80px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 13px;
+    padding: 5px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.map-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.map-btn.active {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4CAF50;
+    color: #4CAF50;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
 .monster-name {
     font-weight: 800;
     color: rgba(255,255,255,0.9);
@@ -1002,6 +1046,39 @@ body {
     white-space: nowrap;
 }
 
+/* Map D-pad Layout */
+.map-dpad-container {
+    display: grid;
+    grid-template-areas: 
+        ". top ." 
+        "left center right" 
+        ". bottom .";
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.map-dpad-container .map-btn {
+    width: 100px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.9em;
+    margin: 0;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.map-dpad-container .map-btn.map-center {
+    border: 2px solid var(--text-highlight, #4CAF50);
+    font-weight: bold;
+    opacity: 1;
+    background: rgba(76, 175, 80, 0.1);
+}
+
 .combat-float.dmg { color: #aaddff; }
 .combat-float.taken { color: #ffaaaa; }
 .combat-float.sys { color: #ffffaa; }
@@ -1148,6 +1225,82 @@ h2, h3, h4 {
     align-items: center;
 }
 
+/* Map D-Pad Layout */
+.map-dpad-container {
+    display: grid;
+    grid-template-areas: 
+        ". top ."
+        "left center right"
+        ". bottom .";
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    margin: 15px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.map-node {
+    width: 90px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.map-node:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+.map-node:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.map-node.center {
+    grid-area: center;
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+}
+
+.map-node.top { grid-area: top; }
+.map-node.bottom { grid-area: bottom; }
+.map-node.left { grid-area: left; }
+.map-node.right { grid-area: right; }
+
+.map-view-toggle {
+    display: block;
+    width: 100%;
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.map-view-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 12px;
+}
+.map-view-toggle button:hover {
+    color: var(--accent);
+}
+
 /* Modal */
 .modal {
     position: fixed;
@@ -1205,30 +1358,91 @@ h2, h3, h4 {
 }
 
 
-/* --- Global Tooltip (Fixed) --- */
-.tooltip-box-fixed {
-    visibility: hidden;
+/* Diablo 2 Style Tooltip */
+#global-tooltip {
     position: fixed;
     z-index: 10000;
-    background-color: rgba(20, 20, 20, 0.95);
-    color: #eee;
-    border: 1px solid var(--accent);
-    padding: 10px 12px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    pointer-events: none; /* Let mouse pass through */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #555;
+    padding: 10px;
+    min-width: 200px;
     max-width: 300px;
-    white-space: pre-wrap;
+    pointer-events: none;
+    visibility: hidden;
     opacity: 0;
     transition: opacity 0.1s;
-    line-height: 1.5;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    text-align: center;
 }
 
-.tooltip-box-fixed h4 {
-    margin: 0 0 5px 0;
-    color: var(--accent);
-    font-size: 1.1em;
+.diablo-tooltip-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.diablo-title {
+    color: #d4af37; /* Gold/Orange */
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.diablo-subtitle {
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.diablo-stat {
+    color: #fff;
+    font-size: 13px;
+}
+
+.diablo-magic {
+    color: #6969ff; /* Magic Blue */
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.diablo-affix-stable {
+    color: #6969ff; /* Magic Blue */
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.diablo-affix-conditional {
+    color: #00ff00; /* Set Green */
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.diablo-affix-rhythm {
+    color: #a335ee; /* Epic Purple */
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.diablo-affix-destiny {
+    color: #ff8000; /* Legendary Orange */
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.diablo-req {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.diablo-flavor {
+    color: #888;
+    font-style: italic;
+    margin-top: 8px;
+    font-size: 12px;
 }
 
 /* Skill UI */

@@ -122,9 +122,23 @@ const Rules = {
         const player = input && input.player && typeof input.player === 'object' ? input.player : {};
         const monster = input && input.monster && typeof input.monster === 'object' ? input.monster : null;
         const monsters = Array.isArray(input && input.monsters) ? input.monsters : [];
+        const target = input && input.target && typeof input.target === 'object' ? input.target : monster;
 
         const playerStatuses = Array.isArray(player.statuses) ? player.statuses : [];
         const hasStatus = (id) => playerStatuses.some(s => s && typeof s === 'object' && s.id === id);
+        const affixPools = (typeof GameData !== 'undefined' && GameData && GameData.affixPools && typeof GameData.affixPools === 'object') ? GameData.affixPools : null;
+        const diminishing = affixPools && Array.isArray(affixPools.diminishing) ? affixPools.diminishing : [1, 0.7, 0.4];
+        const applyDim = (vals) => {
+            const list = Array.isArray(vals) ? vals.filter(v => Number.isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+            if (!list.length) return 0;
+            list.sort((a, b) => b - a);
+            let sum = 0;
+            for (let i = 0; i < list.length; i++) {
+                const m = Number.isFinite(Number(diminishing[i])) ? Number(diminishing[i]) : 0;
+                sum += list[i] * (m > 0 ? m : 0);
+            }
+            return sum;
+        };
 
         const domainActive = monsters.some(m => m && Array.isArray(m.statuses) && m.statuses.some(s => s && typeof s === 'object' && s.id === 'ghost_domain'));
         const monsterIsYin = monster && Array.isArray(monster.tags) && (monster.tags.includes('yin') || monster.tags.includes('ghost'));
@@ -146,6 +160,57 @@ const Rules = {
 
         if (phase === 'player') {
             if (hasStatus('fear')) damageMult *= 0.85;
+
+            const affixes = playerStatuses.filter(s => s && typeof s === 'object' && typeof s.id === 'string' && s.id.startsWith('affix_') && Number.isFinite(Number(s.value)) && Number(s.value) > 0);
+            if (affixes.length) {
+                const conditionalBoost = (() => {
+                    const a = affixes.find(x => x && x.id === 'affix_awakening_boost_conditional');
+                    const v = a ? Number(a.value) : 0;
+                    return Number.isFinite(v) ? Math.max(0, v) : 0;
+                })();
+                const round0 = Number.isFinite(Number(input && input.round)) ? Math.max(0, Math.floor(Number(input.round))) : 0;
+                const roundN = round0 + 1;
+                const selfHp = Number(player.hp) || 0;
+                const selfMaxHp = Number(player.maxHp) || Math.max(1, selfHp);
+                const selfHpPct = selfMaxHp > 0 ? Math.max(0, Math.min(1, selfHp / selfMaxHp)) : 1;
+                const tarHp = target ? (Number(target.hp) || 0) : 0;
+                const tarMaxHp = target ? (Number(target.maxHp) || Math.max(1, tarHp)) : 1;
+                const tarHpPct = tarMaxHp > 0 ? Math.max(0, Math.min(1, tarHp / tarMaxHp)) : 1;
+
+                const byKey = {};
+                const push = (k, v) => {
+                    const key = typeof k === 'string' && k ? k : 'dmg_pct';
+                    if (!byKey[key]) byKey[key] = [];
+                    byKey[key].push(v);
+                };
+                const condOk = (cond) => {
+                    const c = cond && typeof cond === 'object' ? cond : null;
+                    if (!c || typeof c.type !== 'string') return true;
+                    const t = c.type;
+                    const v = Number(c.value);
+                    if (t === 'round_le') return roundN <= (Number.isFinite(v) ? v : 0);
+                    if (t === 'round_ge') return roundN >= (Number.isFinite(v) ? v : 999);
+                    if (t === 'self_hp_le') return selfHpPct <= (Number.isFinite(v) ? v : 0);
+                    if (t === 'target_hp_le') return tarHpPct <= (Number.isFinite(v) ? v : 0);
+                    return true;
+                };
+
+                for (let i = 0; i < affixes.length; i++) {
+                    const a = affixes[i];
+                    const val0 = Number(a.value);
+                    if (!Number.isFinite(val0) || val0 <= 0) continue;
+                    const sk = typeof a.stackKey === 'string' && a.stackKey ? a.stackKey : 'dmg_pct';
+                    if (sk !== 'dmg_pct' && sk !== 'growth_atk' && sk !== 'next_battle_atk') continue;
+                    if (!condOk(a.condition)) continue;
+                    const isConditional = a.kind === 'conditional';
+                    const v1 = isConditional ? val0 * (1 + conditionalBoost) : val0;
+                    push(sk, v1);
+                }
+
+                let totalPct = 0;
+                Object.keys(byKey).forEach(k => { totalPct += applyDim(byKey[k]); });
+                if (totalPct > 0) damageMult *= (1 + totalPct);
+            }
         }
 
         if (takenMult === 1 && damageMult === 1 && mpCostMult === 1) return null;
@@ -207,6 +272,7 @@ const Rules = {
 
     getEventWeight: function(event, storyFlagsOrWorld, worldMaybe) {
         const cfg = (typeof window !== 'undefined' && window.RulesConfig && typeof window.RulesConfig === 'object') ? window.RulesConfig : null;
+        
         const epsRaw = cfg && Object.prototype.hasOwnProperty.call(cfg, 'mfEpsilon') ? Number(cfg.mfEpsilon) : 0.03;
         const eps = Number.isFinite(epsRaw) ? Math.max(0, Math.min(0.2, epsRaw)) : 0.03;
         if (!event || typeof event !== 'object') return 1;
@@ -222,6 +288,18 @@ const Rules = {
         const world = (worldMaybe !== undefined)
             ? (worldMaybe && typeof worldMaybe === 'object' ? worldMaybe : null)
             : (looksLikeWorld(storyFlagsOrWorld) ? storyFlagsOrWorld : null);
+
+        // [V2.0.7] Check repetition penalty
+        if (event && event.id && storyFlags) {
+            const lastTick = storyFlags['event_last_tick_' + event.id];
+            if (Number.isFinite(Number(lastTick))) {
+                const currentTick = (gameState.story && Number.isFinite(Number(gameState.story.tick))) ? gameState.story.tick : 0;
+                const diff = currentTick - Number(lastTick);
+                // Heavy penalty if seen within last 50 ticks, moderate within 100
+                if (diff < 50) return 0.05; 
+                if (diff < 100) return 0.2;
+            }
+        }
 
         const af = this.getAftermath(storyFlags);
         const meta = event.meta && typeof event.meta === 'object' ? event.meta : {};
@@ -469,14 +547,91 @@ const Rules = {
                 : null;
             const weapon = weaponItem && weaponItem.weapon && typeof weaponItem.weapon === 'object' ? weaponItem.weapon : null;
             const base = weapon && weapon.base && typeof weapon.base === 'object' ? weapon.base : null;
+            const affixPools = (typeof GameData !== 'undefined' && GameData && GameData.affixPools && typeof GameData.affixPools === 'object') ? GameData.affixPools : null;
+            const diminishing = affixPools && Array.isArray(affixPools.diminishing) ? affixPools.diminishing : [1, 0.7, 0.4];
+            const applyDim = (vals) => {
+                const list = Array.isArray(vals) ? vals.filter(v => Number.isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+                if (!list.length) return 0;
+                list.sort((a, b) => b - a);
+                let sum = 0;
+                for (let i = 0; i < list.length; i++) {
+                    const m = Number.isFinite(Number(diminishing[i])) ? Number(diminishing[i]) : 0;
+                    sum += list[i] * (m > 0 ? m : 0);
+                }
+                return sum;
+            };
             if (base) {
                 p.atk = (Number(p.atk) || 0) + (Number(base.physicalPower) || 0);
                 p.techPower = (Number(p.techPower) || 0) + (Number(base.techniquePower) || 0);
                 p.spellPower = (Number(p.spellPower) || 0) + (Number(base.spellPower) || 0);
-                p.critRate = clamp((Number(p.critRate) || 0) + (Number(base.critRate) || 0), 0, 1, 0);
                 const cm = Number(base.critMult);
                 if (Number.isFinite(cm)) p.critMult = clamp(cm, 1, 5, 1.5);
                 p.damageReduction = clamp((Number(p.damageReduction) || 0) + (Number(base.damageReduction) || 0), 0, 0.8, 0);
+            }
+            const rolled = weapon && Array.isArray(weapon.rolledAffixes) ? weapon.rolledAffixes : [];
+            if (rolled.length) {
+                const hpPct = applyDim(rolled.filter(a => a && a.id === 'hp_pct').map(a => a.value));
+                const drPct = applyDim(rolled.filter(a => a && a.id === 'dr_pct').map(a => a.value));
+                const critDmgPct = applyDim(rolled.filter(a => a && (a.id === 'critdmg_pct' || a.id === 'bound_critdmg')).map(a => a.value));
+                if (hpPct > 0) {
+                    const max0 = Number(p.maxHp) || 0;
+                    const max1 = Math.max(1, Math.floor(max0 * (1 + hpPct)));
+                    p.maxHp = max1;
+                    p.hp = Math.min(Number(p.hp) || 0, max1);
+                }
+                if (drPct > 0) p.damageReduction = clamp((Number(p.damageReduction) || 0) + drPct, 0, 0.8, 0);
+                if (critDmgPct > 0) p.critMult = clamp((Number(p.critMult) || 1.5) * (1 + critDmgPct), 1, 5, 1.5);
+
+                const killMap = gameState.affixState && typeof gameState.affixState === 'object' && gameState.affixState.mainWeaponKills && typeof gameState.affixState.mainWeaponKills === 'object'
+                    ? gameState.affixState.mainWeaponKills
+                    : {};
+                const kills = Math.max(0, Math.floor(Number(killMap[mainWeaponName]) || 0));
+
+                const as = [];
+                for (let i = 0; i < rolled.length; i++) {
+                    const a = rolled[i];
+                    if (!a || typeof a !== 'object' || typeof a.id !== 'string') continue;
+                    const id = a.id;
+                    const value = Number(a.value);
+                    if (!Number.isFinite(value) || value <= 0) continue;
+                    if (id === 'hp_pct' || id === 'dr_pct' || id === 'critdmg_pct') continue;
+                    if (id === 'bound_critdmg') continue;
+                    if (id === 'growth_kills_atk') {
+                        const per = a.rule && Number.isFinite(Number(a.rule.per)) ? Math.max(1, Math.floor(Number(a.rule.per))) : 100;
+                        const cap = a.rule && Number.isFinite(Number(a.rule.cap)) ? Math.max(0, Number(a.rule.cap)) : 0.06;
+                        const steps = Math.floor(kills / per);
+                        const cur = Math.max(0, Math.min(cap, steps * value));
+                        if (cur > 0) {
+                            as.push({ id: `affix_${id}`, name: '词条', stacks: 1, duration: 999, value: cur, kind: a.kind || 'destiny', stackKey: a.stackKey || id });
+                        }
+                        continue;
+                    }
+                    as.push({
+                        id: `affix_${id}`,
+                        name: '词条',
+                        stacks: 1,
+                        duration: 999,
+                        value,
+                        kind: a.kind || null,
+                        stackKey: a.stackKey || id,
+                        conditionGroup: a.conditionGroup || null,
+                        condition: a.condition && typeof a.condition === 'object' ? { ...a.condition } : undefined,
+                        trigger: a.trigger && typeof a.trigger === 'object' ? { ...a.trigger } : undefined,
+                        rule: a.rule && typeof a.rule === 'object' ? { ...a.rule } : undefined
+                    });
+                }
+                if (as.length) p.statuses = as.concat(Array.isArray(p.statuses) ? p.statuses : []);
+            }
+            if (gameState.affixState && typeof gameState.affixState === 'object' && gameState.affixState.nextBattleAtk && typeof gameState.affixState.nextBattleAtk === 'object') {
+                const nb = gameState.affixState.nextBattleAtk;
+                const stacks = Math.max(0, Math.min(3, Math.floor(Number(nb.stacks) || 0)));
+                const pct = Number(nb.pct);
+                if (stacks > 0 && Number.isFinite(pct) && pct > 0) {
+                    const total = stacks * pct;
+                    p.statuses = [{ id: 'affix_kill_nextbattle_atk', name: '击杀强化', stacks, duration: 999, value: total, kind: 'rhythm', stackKey: 'next_battle_atk' }].concat(Array.isArray(p.statuses) ? p.statuses : []);
+                    nb.stacks = 0;
+                    nb.pct = 0;
+                }
             }
             const mapId = map && typeof map.id === 'string' && map.id.trim() ? map.id.trim() : (map.name || '未知');
             const yinYang = (gameState.mapStates && gameState.mapStates[mapId] && typeof gameState.mapStates[mapId] === 'object') ? (Number(gameState.mapStates[mapId].yinYang) || 0) : 0;
@@ -544,12 +699,37 @@ const Rules = {
                 }
             }
 
+            // Helper to handle drops (instantiating weapons if needed)
+            const processDrop = (name) => {
+                if (!name) return name;
+                if (!gameState.inventory) gameState.inventory = {};
+                
+                const cfg = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[name] : null;
+                if (cfg && cfg.weapon) {
+                    const rng = typeof rewardRng === 'function' ? rewardRng : (() => gameState.rng());
+                    const affixes = (typeof Logic !== 'undefined' && Logic.rollAffixes) 
+                        ? Logic.rollAffixes({ randomCount: 1, rng }) 
+                        : [];
+                    const instKey = (typeof Logic !== 'undefined' && Logic.createItemInstance)
+                        ? Logic.createItemInstance(name, { affixes }, { rng })
+                        : name;
+                    gameState.inventory[instKey] = (gameState.inventory[instKey] || 0) + 1;
+                    return instKey;
+                }
+                gameState.inventory[name] = (gameState.inventory[name] || 0) + 1;
+                return name;
+            };
+
             let dropMsg = "";
             if (rewardRes && rewardRes.drop) {
-                dropMsg = `，获得 [${rewardRes.drop}]`;
-                // [V1.9.0 Fix] 确保掉落物写入背包
-                if (!gameState.inventory) gameState.inventory = {};
-                gameState.inventory[rewardRes.drop] = (gameState.inventory[rewardRes.drop] || 0) + 1;
+                const realDrop = processDrop(rewardRes.drop);
+                dropMsg = `，获得 [${realDrop}]`;
+                
+                // [Fix] Explicit drop log for filter
+                if (typeof UI !== 'undefined' && UI.addLog) {
+                    const srcName = primary ? primary.name : "敌人";
+                    UI.addLog(`从【${srcName}】身上获得了 [${realDrop}]`, 'drop');
+                }
             }
             const sf2 = (gameState.story && typeof gameState.story === 'object' && gameState.story.flags && typeof gameState.story.flags === 'object')
                 ? gameState.story.flags
@@ -570,9 +750,13 @@ const Rules = {
                 extraDrop = rewardRes.drop;
             }
             if (extraDrop) {
-                if (!gameState.inventory) gameState.inventory = {};
-                gameState.inventory[extraDrop] = (gameState.inventory[extraDrop] || 0) + 1;
-                dropMsg += `，额外获得 [${extraDrop}]`;
+                const realExtra = processDrop(extraDrop);
+                dropMsg += `，额外获得 [${realExtra}]`;
+
+                // [Fix] Explicit drop log for filter
+                if (typeof UI !== 'undefined' && UI.addLog) {
+                    UI.addLog(`额外获得了 [${realExtra}]`, 'drop');
+                }
             }
             if ((lootMult > 1 || stealOnce) && typeof gameState.applyStoryUpdate === 'function') {
                 gameState.applyStoryUpdate({ setFlags: { loot_boost_mult: 1, loot_steal_once: false } }, { source: 'Rules.victoryRewards', rule: 'loot_boost', deltaKey: typeof rewardDeltaKey === 'string' ? rewardDeltaKey : undefined });
@@ -779,6 +963,159 @@ const Logic = {
     // 游戏主循环句柄
     loopInterval: null,
     _uiHoldUntilTs: 0,
+    _pickWeightedIndex: function(weights, rng) {
+        const ws = Array.isArray(weights) ? weights : [];
+        let sum = 0;
+        for (let i = 0; i < ws.length; i++) sum += Math.max(0, Number(ws[i]) || 0);
+        if (sum <= 0) return 0;
+        const r = Math.max(0, Math.min(0.999999, (typeof rng === 'function' ? rng() : gameState.rng())));
+        let acc = 0;
+        for (let i = 0; i < ws.length; i++) {
+            acc += Math.max(0, Number(ws[i]) || 0);
+            if (r * sum < acc) return i;
+        }
+        return ws.length - 1;
+    },
+    _rollTier: function(pool, rng) {
+        const tiers = pool && Array.isArray(pool.valueTiers) ? pool.valueTiers : [];
+        const weights = tiers.map(t => Math.max(0, Number(t && t.weight) || 0));
+        const idx = this._pickWeightedIndex(weights, rng);
+        return tiers[idx] || tiers[0] || { tier: 'low' };
+    },
+    _rollValueInRange: function(min, max, tier, rng) {
+        const lo = Number(min);
+        const hi = Number(max);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= 0) return 0;
+        const a = Math.min(lo, hi);
+        const b = Math.max(lo, hi);
+        const span = b - a;
+        const r = Math.max(0, Math.min(0.999999, (typeof rng === 'function' ? rng() : gameState.rng())));
+        if (span <= 0) return a;
+        const t = (tier === 'high') ? (0.85 + r * 0.15) : (tier === 'mid' ? (0.55 + r * 0.30) : (0.20 + r * 0.40));
+        return a + span * t;
+    },
+    _formatAffixLine: function(affix) {
+        const a = affix && typeof affix === 'object' ? affix : null;
+        if (!a) return null;
+        const id = typeof a.id === 'string' ? a.id : '';
+        const label = typeof a.label === 'string' ? a.label : '';
+        const v = Number(a.value);
+        if (!Number.isFinite(v)) return null;
+        const pct = `${Math.round(v * 1000) / 10}%`;
+        if (id === 'atk_pct') return `${label} +${pct}`;
+        if (id === 'hp_pct') return `${label} +${pct}`;
+        if (id === 'dr_pct') return `${label} +${pct}`;
+        if (id === 'critdmg_pct') return `${label} +${pct}`;
+        if (id === 'open_2r_atk') return `开战前2回合 伤害 +${pct}`;
+        if (id === 'enemy_lowhp_atk') return `敌人≤30%HP 伤害 +${pct}`;
+        if (id === 'self_lowhp_atk') return `自身≤30%HP 伤害 +${pct}`;
+        if (id === 'after_5r_atk') return `第5回合后 伤害 +${pct}`;
+        if (id === 'kill_heal_hp') return `击杀回复 +${pct}HP`;
+        if (id === 'kill_nextbattle_atk') return `击杀后下一场 伤害 +${pct}（可叠）`;
+        if (id === 'streak_recovery') return `连战恢复效率 +${pct}`;
+        if (id === 'bound_critdmg') return `仅本命器装备时 暴伤 +${pct}`;
+        if (id === 'growth_kills_atk') return `每击杀100名敌人 伤害 +${pct}（上限）`;
+        if (id === 'awakening_boost_conditional') return `觉醒后 条件词条效果 +${pct}`;
+        return label ? `${label} +${pct}` : null;
+    },
+    rollAffixes: function(opts) {
+        const o = opts && typeof opts === 'object' ? opts : {};
+        const pools = (typeof GameData !== 'undefined' && GameData && GameData.affixPools && typeof GameData.affixPools === 'object') ? GameData.affixPools : null;
+        if (!pools || !pools.pools || typeof pools.pools !== 'object') return [];
+        const rng = typeof o.rng === 'function' ? o.rng : (() => gameState.rng());
+        const fixedCount = Number.isFinite(Number(o.fixedCount)) ? Math.max(0, Math.floor(Number(o.fixedCount))) : 0;
+        const randomCount = Number.isFinite(Number(o.randomCount)) ? Math.max(0, Math.floor(Number(o.randomCount))) : 0;
+        const out = [];
+        const usedIds = new Set();
+        const usedCond = new Set();
+
+        const pushAffixById = (id) => {
+            const all = Object.values(pools.pools).flat();
+            const def = all.find(x => x && typeof x === 'object' && x.id === id) || null;
+            if (!def || usedIds.has(def.id)) return false;
+            if (def.kind === 'conditional' && def.conditionGroup && usedCond.has(def.conditionGroup)) return false;
+            const tier = this._rollTier(pools, rng).tier;
+            const v = (Number(def.min) === Number(def.max)) ? Number(def.min) : this._rollValueInRange(def.min, def.max, tier, rng);
+            const value = Number.isFinite(Number(v)) ? Number(v) : 0;
+            const rolled = {
+                id: def.id,
+                kind: def.kind,
+                label: def.label,
+                value,
+                unit: def.unit,
+                stackKey: def.stackKey || def.id,
+                conditionGroup: def.conditionGroup || null,
+                condition: def.condition && typeof def.condition === 'object' ? { ...def.condition } : undefined,
+                trigger: def.trigger && typeof def.trigger === 'object' ? { ...def.trigger } : undefined,
+                rule: def.rule && typeof def.rule === 'object' ? { ...def.rule } : undefined,
+                tier
+            };
+            
+            // Populate description
+            rolled.desc = this._formatAffixLine(rolled);
+            
+            out.push(rolled);
+            usedIds.add(def.id);
+            if (def.kind === 'conditional' && def.conditionGroup) usedCond.add(def.conditionGroup);
+            return true;
+        };
+
+        for (let i = 0; i < fixedCount; i++) {
+            pushAffixById('bound_critdmg');
+        }
+
+        const typeWeights = pools.typeWeights && typeof pools.typeWeights === 'object' ? pools.typeWeights : { stable: 65, conditional: 25, rhythm: 8, destiny: 2 };
+        const typeKeys = ['stable', 'conditional', 'rhythm', 'destiny'];
+        const wType = typeKeys.map(k => Math.max(0, Number(typeWeights[k]) || 0));
+
+        for (let i = 0; i < randomCount; i++) {
+            let picked = null;
+            for (let tries = 0; tries < 12; tries++) {
+                const tk = typeKeys[this._pickWeightedIndex(wType, rng)] || 'stable';
+                const list = Array.isArray(pools.pools[tk]) ? pools.pools[tk].filter(Boolean) : [];
+                if (!list.length) continue;
+                const weights = list.map(a => Math.max(0, Number(a && a.weight) || 1));
+                const idx = this._pickWeightedIndex(weights, rng);
+                const def = list[idx] || list[0];
+                if (!def || typeof def !== 'object' || !def.id) continue;
+                if (usedIds.has(def.id)) continue;
+                if (def.kind === 'conditional' && def.conditionGroup && usedCond.has(def.conditionGroup)) continue;
+                picked = def.id;
+                break;
+            }
+            if (picked) pushAffixById(picked);
+        }
+
+        return out;
+    },
+    createItemInstance: function(baseName, meta, opts) {
+        const o = opts && typeof opts === 'object' ? opts : {};
+        const bn = typeof baseName === 'string' ? baseName.trim() : '';
+        if (!bn) return null;
+        if (!gameState.itemInstances || typeof gameState.itemInstances !== 'object') gameState.itemInstances = {};
+        if (!gameState.inventory || typeof gameState.inventory !== 'object') gameState.inventory = {};
+
+        const rng = typeof o.rng === 'function' ? o.rng : (() => gameState.rng());
+        const shortId = (() => {
+            for (let tries = 0; tries < 20; tries++) {
+                const n = Math.floor(Math.max(0, Math.min(0.999999, rng())) * 1679616);
+                const s = n.toString(36).toUpperCase().padStart(4, '0');
+                const key = `${bn}#${s}`;
+                if (!gameState.itemInstances[key]) return s;
+            }
+            const n1 = Math.floor(Math.max(0, Math.min(0.999999, rng())) * 2176782336);
+            return n1.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+        })();
+        const instanceKey = `${bn}#${shortId}`;
+        const m = meta && typeof meta === 'object' ? meta : {};
+        const affixes = Array.isArray(m.affixes) ? m.affixes : [];
+        const createdAt = (gameState.story && typeof gameState.story === 'object' && Number.isFinite(Number(gameState.story.tick))) ? Math.floor(Number(gameState.story.tick)) : 0;
+        gameState.itemInstances[instanceKey] = { baseName: bn, quality: m.quality || null, affixes, createdAt, binds: m.binds && typeof m.binds === 'object' ? { ...m.binds } : {} };
+
+        if (typeof gameState.rehydrateItemInstances === 'function') gameState.rehydrateItemInstances();
+        gameState.inventory[instanceKey] = (Number(gameState.inventory[instanceKey]) || 0) + 1;
+        return instanceKey;
+    },
     _maybeTriggerAmbientEvent: function(tickDeltaKey) {
         if (typeof GameData === 'undefined' || !GameData || !Array.isArray(GameData.events)) return false;
         if (typeof UI === 'undefined' || !UI || typeof UI.showEventModal !== 'function') return false;
@@ -840,6 +1177,12 @@ const Logic = {
 
         if (picked) {
             UI.showEventModal(picked);
+            
+            // [V2.0.7] Record event occurrence to prevent repetition
+            if (gameState.story && gameState.story.flags) {
+                gameState.story.flags['event_last_tick_' + picked.id] = (gameState.story.tick || 0);
+            }
+
             if (typeof tickDeltaKey === 'string' && tickDeltaKey.trim()) {
                 gameState.lastMeta = { source: 'ambient_event', tick: (gameState.story && gameState.story.tick) || 0, payload: { eventId: picked.id, deltaKey: tickDeltaKey } };
             }
@@ -1035,6 +1378,15 @@ const Logic = {
 
         if (gameState.combat) {
             if (typeof CombatEngine !== 'undefined' && CombatEngine) {
+                const prevHpById = {};
+                const prevMonsters = (gameState.combat && Array.isArray(gameState.combat.monsters)) ? gameState.combat.monsters : [];
+                for (let i = 0; i < prevMonsters.length; i++) {
+                    const mm = prevMonsters[i];
+                    if (!mm || typeof mm !== 'object') continue;
+                    const id = typeof mm.id === 'string' ? mm.id : null;
+                    if (!id) continue;
+                    prevHpById[id] = Number(mm.hp) || 0;
+                }
                 let rngSeq = 0;
                 const rng = () => {
                     rngSeq += 1;
@@ -1064,6 +1416,61 @@ const Logic = {
                 }
 
                 if (res && res.combat) gameState.combat = res.combat;
+                const nextCombat = gameState.combat;
+                const nextMonsters = (nextCombat && Array.isArray(nextCombat.monsters)) ? nextCombat.monsters : [];
+                const killed = [];
+                for (let i = 0; i < nextMonsters.length; i++) {
+                    const mm = nextMonsters[i];
+                    if (!mm || typeof mm !== 'object') continue;
+                    const id = typeof mm.id === 'string' ? mm.id : null;
+                    if (!id) continue;
+                    const before = Number(prevHpById[id]) || 0;
+                    const after = Number(mm.hp) || 0;
+                    if (before > 0 && after <= 0) killed.push(mm);
+                }
+                if (killed.length) {
+                    if (!gameState.affixState || typeof gameState.affixState !== 'object') gameState.affixState = { nextBattleAtk: { stacks: 0, pct: 0 }, streakRecoveryPct: 0, mainWeaponKills: {} };
+                    if (!gameState.affixState.nextBattleAtk || typeof gameState.affixState.nextBattleAtk !== 'object') gameState.affixState.nextBattleAtk = { stacks: 0, pct: 0 };
+                    if (!gameState.affixState.mainWeaponKills || typeof gameState.affixState.mainWeaponKills !== 'object') gameState.affixState.mainWeaponKills = {};
+
+                    const eq = gameState.equipment && typeof gameState.equipment === 'object' ? gameState.equipment : null;
+                    const mw = eq && typeof eq.mainWeapon === 'string' && eq.mainWeapon.trim() ? eq.mainWeapon.trim() : null;
+                    const itemCfg = (mw && typeof GameData !== 'undefined' && GameData && GameData.itemConfig && GameData.itemConfig[mw] && typeof GameData.itemConfig[mw] === 'object')
+                        ? GameData.itemConfig[mw]
+                        : null;
+                    const weapon = itemCfg && itemCfg.weapon && typeof itemCfg.weapon === 'object' ? itemCfg.weapon : null;
+                    const rolled = weapon && Array.isArray(weapon.rolledAffixes) ? weapon.rolledAffixes : [];
+                    if (mw) {
+                        gameState.affixState.mainWeaponKills[mw] = (Number(gameState.affixState.mainWeaponKills[mw]) || 0) + killed.length;
+                    }
+
+                    const healAff = rolled.find(a => a && a.id === 'kill_heal_hp' && Number.isFinite(Number(a.value)) && Number(a.value) > 0) || null;
+                    if (healAff) {
+                        const pct = Number(healAff.value);
+                        const maxHp = Math.max(1, Number(gameState.maxHp) || 1);
+                        const perKill = Math.max(1, Math.floor(maxHp * pct));
+                        const total = perKill * killed.length;
+                        if (total > 0 && typeof gameState.applyPlayerDelta === 'function') {
+                            gameState.applyPlayerDelta({ playerHp: total }, { source: 'Affix', rule: 'kill_heal_hp', deltaKey: (typeof tickDeltaKey === 'string' ? tickDeltaKey : undefined) });
+                            if (typeof UI !== 'undefined' && UI && typeof UI.spawnCombatFloat === 'function') UI.spawnCombatFloat(`+${total}`, 'heal', { deltaKey: tickDeltaKey });
+                            if (typeof UI !== 'undefined' && UI && typeof UI.renderCombatLogs === 'function') UI.renderCombatLogs([{ type: 'battle', tag: 'affix', text: `击杀回复：+${total} 气血`, meta: { action: 'affix', affixId: 'kill_heal_hp', deltaKey: tickDeltaKey } }]);
+                        }
+                    }
+
+                    const nextAff = rolled.find(a => a && a.id === 'kill_nextbattle_atk' && Number.isFinite(Number(a.value)) && Number(a.value) > 0) || null;
+                    if (nextAff) {
+                        const nb = gameState.affixState.nextBattleAtk;
+                        const add = killed.length;
+                        const stacksMax = (nextAff.trigger && Number.isFinite(Number(nextAff.trigger.stacksMax))) ? Math.max(1, Math.floor(Number(nextAff.trigger.stacksMax))) : 3;
+                        const nextStacks = Math.max(0, Math.min(stacksMax, (Math.floor(Number(nb.stacks) || 0) + add)));
+                        nb.stacks = nextStacks;
+                        nb.pct = Number(nextAff.value);
+                        if (typeof UI !== 'undefined' && UI && typeof UI.renderCombatLogs === 'function') {
+                            const pctText = `${Math.round(Number(nextAff.value) * 1000) / 10}%`;
+                            UI.renderCombatLogs([{ type: 'battle', tag: 'affix', text: `击杀强化：下一场伤害 +${pctText}（层数 ${nextStacks}/${stacksMax}）`, meta: { action: 'affix', affixId: 'kill_nextbattle_atk', deltaKey: tickDeltaKey } }]);
+                        }
+                    }
+                }
                 if (res && res.logs && res.logs.length) {
                     if (typeof UI !== 'undefined' && UI && typeof UI.renderCombatLogs === 'function') UI.renderCombatLogs(res.logs);
                 }
@@ -1702,20 +2109,31 @@ const Logic = {
             gameState._lastRngConsumerTag = 'forge.mainWeapon.pick';
             const idx = Math.floor(gameState.rng() * pickList.length);
             const raw = pickList[idx] || pickList[0];
-            const weaponName = (raw && typeof raw === 'object' && typeof raw.name === 'string') ? raw.name : (typeof raw === 'string' ? raw : null);
-            if (!weaponName) {
+            const weaponBaseName = (raw && typeof raw === 'object' && typeof raw.name === 'string') ? raw.name : (typeof raw === 'string' ? raw : null);
+            if (!weaponBaseName) {
                 if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') UI.addLog('本命器打造失败：数据异常。', 'sys');
                 if (o.silent !== true && typeof gameState.save === 'function') gameState.save();
                 return true;
             }
-            if (!gameState.inventory || typeof gameState.inventory !== 'object') gameState.inventory = {};
-            gameState.inventory[weaponName] = (Number(gameState.inventory[weaponName]) || 0) + 1;
+            let rngSeq = 0;
+            const rng = () => {
+                rngSeq += 1;
+                gameState._lastRngConsumerTag = `forge.mainWeapon.affix#${rngSeq}`;
+                return gameState.rng();
+            };
+            const affixes = (typeof Logic !== 'undefined' && Logic && typeof Logic.rollAffixes === 'function')
+                ? Logic.rollAffixes({ fixedCount: 1, randomCount: 1, rng })
+                : [];
+            gameState._lastRngConsumerTag = 'forge.mainWeapon.instance';
+            const instanceKey = (typeof Logic !== 'undefined' && Logic && typeof Logic.createItemInstance === 'function')
+                ? Logic.createItemInstance(weaponBaseName, { quality: 'main_weapon', affixes, binds: { mainWeapon: true } }, { rng })
+                : weaponBaseName;
             if (!gameState.equipment || typeof gameState.equipment !== 'object') {
                 gameState.equipment = { mainWeapon: null, guard: null, armor: null, daoTool: null, daoRing1: null, daoRing2: null, battlePendant: null, talismanToken: null, aux: null };
             }
-            if (!gameState.equipment.mainWeapon) gameState.equipment.mainWeapon = weaponName;
+            if (!gameState.equipment.mainWeapon) gameState.equipment.mainWeapon = instanceKey;
             if (typeof UI !== 'undefined' && UI && typeof UI.addLog === 'function') {
-                UI.addLog(`本命器已成：获得【${weaponName}】${gameState.equipment.mainWeapon === weaponName ? '（已装备）' : ''}。`, 'sys');
+                UI.addLog(`本命器已成：获得【${weaponBaseName}】${gameState.equipment.mainWeapon === instanceKey ? '（已装备）' : ''}。`, 'sys');
             }
             if (o.silent !== true && typeof UI !== 'undefined' && UI) {
                 if (typeof UI.renderInventory === 'function') UI.renderInventory();

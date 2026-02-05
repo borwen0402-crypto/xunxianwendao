@@ -165,6 +165,11 @@ const UI = {
                     const race = gameState.race;
                     const data = (GameData.raceConfig && GameData.raceConfig[race]) || { desc: '未知种族' };
                     content = `<h4>${race}</h4><p>${data.desc}</p>`;
+                } else if (key && key.startsWith('item:')) {
+                    // [V2.0.7] Diablo Style Item Tooltip
+                    const itemName = key.substring(5);
+                    const extra = target.dataset.tooltipExtra;
+                    content = UI.generateItemTooltip(itemName, extra);
                 } else if (key === 'realm') {
                     let desc = '未知境界';
                     let next = '已至巅峰';
@@ -222,6 +227,91 @@ const UI = {
                 activeTarget = null;
             }
         });
+    },
+
+    // 生成暗黑风格物品提示
+    generateItemTooltip: function(itemName, extraInfo) {
+        let baseName = itemName;
+        let instance = null;
+        
+        // Handle instance items (e.g., "Iron Sword#A1B2")
+        if (typeof itemName === 'string' && itemName.includes('#')) {
+            baseName = itemName.split('#')[0];
+            if (typeof gameState !== 'undefined' && gameState.itemInstances && gameState.itemInstances[itemName]) {
+                instance = gameState.itemInstances[itemName];
+            }
+        }
+        
+        const itemCfg = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[baseName] : null;
+        
+        // Fallback for unknown items
+        if (!itemCfg) {
+            return `<div class="diablo-tooltip-container"><div class="diablo-title">${itemName}</div><div class="diablo-subtitle">未知物品</div></div>`;
+        }
+
+        let html = `<div class="diablo-tooltip-container">`;
+        html += `<div class="diablo-title">${instance ? (instance.baseName || baseName) : baseName}</div>`;
+
+        if (itemCfg.weapon) {
+            const w = itemCfg.weapon;
+            const realm = w.realm || "凡人";
+            html += `<div class="diablo-subtitle">${realm} · ${w.type || "兵器"}</div>`;
+            
+            // Base Stats (White)
+            const base = w.base || {};
+            if (base.physicalPower) html += `<div class="diablo-stat">物理攻击: ${base.physicalPower}</div>`;
+            if (base.techniquePower) html += `<div class="diablo-stat">术法攻击: ${base.techniquePower}</div>`;
+            if (base.spellPower) html += `<div class="diablo-stat">灵力攻击: ${base.spellPower}</div>`;
+            
+            // Requirements (Grey)
+            html += `<div class="diablo-req">需求境界: ${realm}</div>`;
+            html += `<div class="diablo-req">类型: ${w.type || "本命器"}</div>`;
+
+            // Magic Props (Blue/Colored)
+            if (base.critRate) html += `<div class="diablo-magic">+${Math.round(base.critRate*100)}% 暴击率</div>`;
+            if (base.critMult) html += `<div class="diablo-magic">+${Math.round(base.critMult*100)}% 暴击伤害</div>`;
+            if (base.damageReduction) html += `<div class="diablo-magic">+${Math.round(base.damageReduction*100)}% 伤害减免</div>`;
+            
+            // Affixes
+            // Priority: Instance Affixes > Config Affixes > Empty
+            const affixes = (instance && Array.isArray(instance.affixes)) ? instance.affixes : (w.affixes || []);
+            
+            if (affixes && affixes.length > 0) {
+                affixes.forEach(affix => {
+                    let cssClass = "diablo-magic"; // Default Blue
+                    if (affix.kind === 'stable') cssClass = "diablo-affix-stable";
+                    else if (affix.kind === 'conditional') cssClass = "diablo-affix-conditional";
+                    else if (affix.kind === 'rhythm') cssClass = "diablo-affix-rhythm";
+                    else if (affix.kind === 'destiny') cssClass = "diablo-affix-destiny";
+                    
+                    const label = affix.desc || affix.label || "未知词缀";
+                    // Only show if label is valid
+                    if (label) {
+                         html += `<div class="${cssClass}">${label}</div>`;
+                    }
+                });
+            } else if (!instance && (!w.affixes || w.affixes.length === 0)) {
+                 // No affixes (Legacy or plain)
+                 html += `<div class="diablo-flavor" style="color:#666">（旧制兵器，无词条）</div>`;
+            }
+        } else {
+            // Regular Item
+            if (itemCfg.type) html += `<div class="diablo-subtitle">${itemCfg.type}</div>`;
+            
+            // Consumable stats / Effects
+            if (itemCfg.hp) html += `<div class="diablo-magic">气血: ${itemCfg.hp > 0 ? '+' : ''}${itemCfg.hp}</div>`;
+            if (itemCfg.mp) html += `<div class="diablo-magic">灵力: ${itemCfg.mp > 0 ? '+' : ''}${itemCfg.mp}</div>`;
+            if (itemCfg.exp) html += `<div class="diablo-magic">修为: ${itemCfg.exp > 0 ? '+' : ''}${itemCfg.exp}</div>`;
+            
+            if (itemCfg.desc) html += `<div class="diablo-flavor">${itemCfg.desc}</div>`;
+        }
+        
+        if (extraInfo) {
+            html += `<div class="diablo-flavor" style="color:#aaa; border-top:1px solid #333; margin-top:4px; padding-top:2px;">${extraInfo.replace(/\n/g, '<br>')}</div>`;
+        }
+
+        html += `</div>`;
+        return html;
     },
 
     // 渲染属性网格 (双列布局)
@@ -1133,19 +1223,14 @@ const UI = {
         controls.appendChild(toggleBtn);
         mapList.appendChild(controls);
 
-        // 地图网格
-        const grid = document.createElement('div');
-        grid.style.display = 'grid';
-        grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-        grid.style.gap = '10px';
-        grid.style.marginBottom = '10px';
-
-        const allMaps = Object.keys(GameData.mapConfig);
+        // 辅助函数：判断是否为阴间地图
         const isYinId = (id) => {
             const m = GameData.mapConfig && GameData.mapConfig[id];
             const w = m && typeof m.world === 'string' ? m.world : '';
             return w === 'yin' || (typeof id === 'string' && id.startsWith('阴间'));
         };
+
+        // 辅助函数：获取阴间通行提示
         const getYinGateHint = () => {
             const isYinYangDao = gameState.activeDao === '阴阳道';
             const inv = gameState.inventory && typeof gameState.inventory === 'object' ? gameState.inventory : (gameState.inventory = {});
@@ -1160,20 +1245,26 @@ const UI = {
             return { canAttempt, hint };
         };
 
-        allMaps.forEach(nid => {
-            const map = GameData.mapConfig[nid];
-            if (!map) return;
+        // 辅助函数：创建地图按钮
+        const createMapButton = (mapId, isCenter = false) => {
+            const map = GameData.mapConfig[mapId];
+            if (!map) return null;
 
-            const isCurrent = current.id === nid;
-            const isNeighbor = current.neighbors && current.neighbors.includes(nid);
-            const isCrossLayer = current.crossLayerMap === nid;
+            const isCurrent = current.id === mapId;
+            const isNeighbor = current.neighbors && current.neighbors.includes(mapId);
+            const isCrossLayer = current.crossLayerMap === mapId;
             const isReachable = isNeighbor || isCrossLayer;
-            const yinGateTarget = nid === '阴间·思桥下层（运魂之河）' && isYinId(nid);
-
-            if (!this.showAllMaps && !isReachable && !isCurrent) return;
+            const yinGateTarget = mapId === '阴间·思桥下层（运魂之河）' && isYinId(mapId);
 
             const btn = document.createElement('button');
             btn.className = "map-btn";
+            
+            // 样式调整
+            if (isCenter) {
+                btn.classList.add('map-center'); // 需要在 CSS 中定义或直接内联
+                btn.style.fontWeight = 'bold';
+                btn.style.border = '2px solid var(--text-highlight, #4CAF50)';
+            }
 
             let label = map.name;
             if (!isCurrent && isCrossLayer) label += " (借道)";
@@ -1183,18 +1274,33 @@ const UI = {
             let canClick = false;
             if (isCurrent) {
                 btn.classList.add('active');
-                btn.style.border = "1px solid #4CAF50";
                 btn.style.color = "#4CAF50";
-                btn.disabled = true;
+                
+                // [V2.0.7] Update: Allow clicking current map to toggle details/hanging panel
+                if (isCenter) {
+                    btn.disabled = false;
+                    btn.style.cursor = "pointer";
+                    btn.title = "点击展开/收起详情与挂机面板";
+                    btn.onclick = () => {
+                        const panel = document.getElementById('active-map-panel');
+                        if (panel) panel.classList.toggle('hidden');
+                        const hint = document.getElementById('map-hint');
+                        if (hint) hint.classList.toggle('hidden');
+                    };
+                } else {
+                    btn.disabled = true;
+                }
             } else if (isReachable) {
                 canClick = true;
                 if (isCrossLayer) btn.style.border = "1px solid #9b59b6";
             } else {
+                // 不可达
                 btn.disabled = true;
                 btn.style.opacity = "0.4";
                 btn.style.cursor = "not-allowed";
             }
 
+            // 锁区逻辑
             if (map.locked) {
                 if (yinGateTarget && isReachable) {
                     const gate = getYinGateHint();
@@ -1212,31 +1318,85 @@ const UI = {
 
             if (canClick) {
                 btn.disabled = false;
-                btn.addEventListener('click', () => Logic.requestEnterMap(nid));
+                btn.addEventListener('click', () => Logic.requestEnterMap(mapId));
             }
 
-            grid.appendChild(btn);
+            return btn;
+        };
+
+        // --- D-pad 布局渲染 ---
+        const dpad = document.createElement('div');
+        dpad.className = 'map-dpad-container'; // 使用已定义的 CSS 类
+
+        // 1. 中心：当前地图
+        const centerBtn = createMapButton(current.id, true);
+        if (centerBtn) {
+            centerBtn.style.gridArea = 'center';
+            dpad.appendChild(centerBtn);
+        }
+
+        // 2. 邻居：分布到 Top, Left, Right, Bottom
+        const neighbors = current.neighbors || [];
+        const positions = ['top', 'left', 'right', 'bottom'];
+        const placedNeighbors = new Set();
+
+        neighbors.slice(0, 4).forEach((nid, index) => {
+            const btn = createMapButton(nid);
+            if (btn) {
+                btn.style.gridArea = positions[index];
+                dpad.appendChild(btn);
+                placedNeighbors.add(nid);
+            }
         });
 
-        mapList.appendChild(grid);
+        mapList.appendChild(dpad);
 
-        // 2. 渲染跨界通道 (阴阳切换)
+        // 3. 其他地图 (非邻居 或 超过4个的邻居)
+        if (this.showAllMaps) {
+            const allMaps = Object.keys(GameData.mapConfig);
+            const otherMaps = allMaps.filter(nid => nid !== current.id && !placedNeighbors.has(nid));
+
+            if (otherMaps.length > 0) {
+                const divider = document.createElement('div');
+                divider.textContent = "—— 远方 ——";
+                divider.style.textAlign = 'center';
+                divider.style.color = '#666';
+                divider.style.fontSize = '0.8em';
+                divider.style.margin = '10px 0';
+                mapList.appendChild(divider);
+
+                const grid = document.createElement('div');
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                grid.style.gap = '10px';
+
+                otherMaps.forEach(nid => {
+                    const btn = createMapButton(nid);
+                    if (btn) grid.appendChild(btn);
+                });
+                mapList.appendChild(grid);
+            }
+        }
+
+        // 4. 渲染跨界通道 (阴阳切换) - 保持原有逻辑
         if (current.crossLayerMap) {
             const targetId = current.crossLayerMap;
             const targetMap = GameData.mapConfig[targetId];
             if (targetMap) {
                 const layerBtn = document.createElement('button');
                 layerBtn.innerHTML = "☯ 是否借道阴阳？";
-                layerBtn.className = "map-btn layer-switch-btn"; // Add custom class if needed
+                layerBtn.className = "map-btn layer-switch-btn";
                 layerBtn.style.width = "100%";
                 layerBtn.style.marginTop = "10px";
                 layerBtn.style.background = "linear-gradient(45deg, #333, #555)";
                 layerBtn.style.border = "1px solid #777";
+                
                 const hintLine = document.createElement('div');
                 hintLine.style.marginTop = '6px';
                 hintLine.style.fontSize = '12px';
                 hintLine.style.color = '#aaa';
                 hintLine.style.lineHeight = '1.35';
+                
                 if (targetMap.locked && (targetId === '阴间·思桥下层（运魂之河）')) {
                     const gate = getYinGateHint();
                     hintLine.textContent = `阴间通行：${gate.hint}`;
@@ -1260,8 +1420,10 @@ const UI = {
         const map = gameState.currentMap;
         if (!map) return;
 
-        document.getElementById('active-map-panel').classList.remove('hidden');
-        document.getElementById('map-hint').classList.add('hidden');
+        // [V2.0.7] Update: Do not auto-show panel. Let user toggle via map click.
+        // document.getElementById('active-map-panel').classList.remove('hidden');
+        // document.getElementById('map-hint').classList.add('hidden');
+        
         document.getElementById('current-map-name').textContent = map.name;
         
         const monsterText = (map.monsterPool && map.monsterPool.length > 0) 
@@ -1381,12 +1543,21 @@ const UI = {
         for (const [item, count] of Object.entries(gameState.inventory)) {
             if (count <= 0) continue;
 
+            const inst = (gameState.itemInstances && typeof gameState.itemInstances === 'object' && gameState.itemInstances[item] && typeof gameState.itemInstances[item] === 'object')
+                ? gameState.itemInstances[item]
+                : null;
+            const baseName = inst && typeof inst.baseName === 'string' && inst.baseName.trim() ? inst.baseName.trim() : item;
+            const suffix = inst ? ('#' + String(item).split('#').pop()) : '';
+
             const card = document.createElement('div');
             card.className = 'item-card';
+            // Add tooltip trigger
+            card.setAttribute('data-tooltip-key', 'item:' + item);
+            if (count > 1) card.setAttribute('data-tooltip-extra', `数量: ${count}`);
             
             const span = document.createElement('span');
-            span.textContent = `${item} (x${count})`;
-            const rc = getRarityClass(item);
+            span.textContent = `${baseName}${suffix} (x${count})`;
+            const rc = getRarityClass(baseName);
             if (rc) span.className = rc;
             
             // [V1.9.0 Feature] 显示物品描述
@@ -1486,6 +1657,10 @@ const UI = {
             const itemName = typeof eq[s.key] === 'string' && eq[s.key].trim() ? eq[s.key].trim() : null;
             const itemCfg = itemName && items[itemName] && typeof items[itemName] === 'object' ? items[itemName] : null;
             const desc = itemCfg && typeof itemCfg.desc === 'string' ? itemCfg.desc : '';
+            const inst = (itemName && gameState.itemInstances && typeof gameState.itemInstances === 'object' && gameState.itemInstances[itemName] && typeof gameState.itemInstances[itemName] === 'object')
+                ? gameState.itemInstances[itemName]
+                : null;
+            const baseName = inst && typeof inst.baseName === 'string' && inst.baseName.trim() ? inst.baseName.trim() : itemName;
 
             const el = document.createElement('div');
             el.className = `equip-slot ${itemName ? 'filled' : 'empty'}`;
@@ -1501,15 +1676,18 @@ const UI = {
 
             const tag = document.createElement('span');
             tag.className = 'slot-item';
-            tag.textContent = itemName ? itemName.slice(0, 1) : '';
+            tag.textContent = baseName ? baseName.slice(0, 1) : '';
 
             el.appendChild(icon);
             el.appendChild(label);
             el.appendChild(tag);
 
-            el.title = itemName
-                ? `${s.label}：${itemName}${desc ? `\n${desc}` : ''}`
-                : `${s.label}：未装备`;
+            // [V2.0.7] Use Diablo-style tooltip
+            if (itemName) {
+                el.setAttribute('data-tooltip-key', 'item:' + itemName);
+            } else {
+                el.title = `${s.label}：未装备`;
+            }
 
             el.onclick = () => {
                 if (o.mode === 'inventory' && itemName && itemCfg && itemCfg.type === 'weapon') {
@@ -1559,10 +1737,15 @@ const UI = {
             
             if (index < items.length) {
                 const [name, count] = items[index];
-                slot.textContent = name.substring(0, 1); // 显示首字
-                let title = `${name} (x${count})`;
+                const inst = (gameState.itemInstances && typeof gameState.itemInstances === 'object' && gameState.itemInstances[name] && typeof gameState.itemInstances[name] === 'object')
+                    ? gameState.itemInstances[name]
+                    : null;
+                const baseName = inst && typeof inst.baseName === 'string' && inst.baseName.trim() ? inst.baseName.trim() : name;
+                slot.textContent = baseName.substring(0, 1);
+                let title = `${baseName}${inst ? ('#' + String(name).split('#').pop()) : ''} (x${count})`;
                 const effect = (typeof GameData !== 'undefined' && GameData.itemConfig) ? GameData.itemConfig[name] : null;
                 const isTalisman = effect && effect.type === 'talisman';
+                let hint = '';
                 if (isTalisman) {
                     const cd = effect.cooldown && typeof effect.cooldown === 'object' ? effect.cooldown : {};
                     const inCombat = !!gameState.combat;
@@ -1580,7 +1763,7 @@ const UI = {
                         ? gameState.mapStates[mapId]
                         : null;
                     const perMapUsed = !!(mapState && mapState.talismanUsed && typeof mapState.talismanUsed === 'object' && mapState.talismanUsed[name] === true);
-                    let hint = '';
+                    
                     if (cd.kind === 'world' && cd.oncePerMap === true && perMapUsed) {
                         hint = '本图已用';
                     } else if (cd.kind === 'battle') {
@@ -1594,9 +1777,15 @@ const UI = {
                     }
                     if (hint) title += `\n${hint}`;
                 }
-                slot.title = title;
+                
+                // [V2.0.7] Diablo Style Tooltip
+                slot.setAttribute('data-tooltip-key', 'item:' + name);
+                let extras = `数量: ${count}`;
+                if (hint) extras += `\n${hint}`;
+                slot.setAttribute('data-tooltip-extra', extras);
+                
                 slot.classList.add('has-item');
-                const rc = getRarityClass(name);
+                const rc = getRarityClass(baseName);
                 if (rc) slot.classList.add(rc);
                 // 可选：点击使用
                 slot.onclick = () => {

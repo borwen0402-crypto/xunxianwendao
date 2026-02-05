@@ -232,28 +232,57 @@ const GameData = {
     // 3. 更新公告 (V1.9 新增)
     releaseNotes: [
         {
-            version: "v2.0.7 更新公告",
-            date: "2026-02-05",
-            title: "界面优化与怪物修正",
+            version: "V2.1.0 Alpha",
+            date: "2026-02-06",
+            title: "神兵重铸与词缀觉醒",
             content: `
                 <div style="text-align:left;">
-                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、界面交互优化</h4>
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、装备系统重构</h4>
                     <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
-                        <li><b>窗口关闭优化</b>：现在可以通过按 ESC 键或点击窗口外部区域快速关闭各类弹窗（如怪物图鉴、符箓手册等），操作更顺滑。</li>
-                        <li><b>图鉴信息完善</b>：怪物图鉴现已显示怪物的“出没地点”，方便道友寻找特定妖物。</li>
-                        <li><b>装备界面调整</b>：优化了装备栏布局，采用左侧总览+右侧背包的双栏设计，并新增了第二个道环装备位，提升配装策略深度。</li>
+                        <li><b>底材差异化</b>：彻底重做本命器数值体系，15 种武器类型不再只有外观区别。</li>
+                        <li><b>职业倾向</b>：锤/戟/刀侧重极致物理，符册/扇/笛侧重术法灵力，剑/葫芦/印均衡发展。</li>
+                        <li><b>通用词条移除</b>：移除所有武器自带的“暴击/爆伤/减伤”固定词条，解决“千篇一律”的问题。</li>
                     </ul>
 
-                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、视觉体验升级</h4>
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、暗黑风词缀系统</h4>
                     <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
-                        <li><b>清爽模式 (Clean Mode)</b>：修复了清爽模式下部分文字（如怪物图鉴、技能描述）看不清的问题，优化了阅读体验。</li>
-                        <li><b>摸鱼模式 (Stealth Mode)</b>：调整了摸鱼模式的配色，回归纯粹的黑灰极简风格，降低屏幕亮度，更加隐蔽。</li>
+                        <li><b>随机词缀池</b>：实装 V2.1 随机词缀，包含稳定(蓝)、条件(绿)、韵律(紫)、天命(橙)四类。</li>
+                        <li><b>真·随机掉落</b>：战斗掉落与锻造的装备将拥有独一无二的词缀组合（Item Instance）。</li>
+                        <li><b>Diablo 风格悬浮窗</b>：全新暗黑风装备详情页，词缀颜色分级显示，描述根据实际属性动态生成。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">三、修复与优化</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>崩溃修复</b>：修复了查看迷你背包时可能触发的 "hint is not defined" 游戏崩溃。</li>
+                        <li><b>旧物标记</b>：现有存档中的旧版装备将被标记为“旧制兵器”，建议重新获取以体验新版内容。</li>
+                    </ul>
+                </div>
+            `
+        },
+        {
+            version: "v2.0.7 更新公告",
+            date: "2026-02-05",
+            title: "地图重构与奇遇升级",
+            content: `
+                <div style="text-align:left;">
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">一、地图交互重构</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>十字方向导航</b>：地图列表全新升级为十字（D-pad）布局，当前位置居中，邻近地图按方位排列，代入感大幅提升。</li>
+                        <li><b>交互优化</b>：支持按 ESC 键或点击空白处关闭各类弹窗；怪物图鉴新增“出没地点”显示。</li>
+                        <li><b>视觉升级</b>：修复了清爽模式下的显示问题；摸鱼模式回归纯粹黑灰风格。</li>
+                    </ul>
+
+                    <h4 style="color:#e0e0e0; margin:10px 0 5px;">二、奇遇事件升级</h4>
+                    <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
+                        <li><b>收益大幅提升</b>：全面上调了环境奇遇（Ambient Events）的奖励，灵力、经验收益翻倍，部分事件可恢复气血。</li>
+                        <li><b>新增各类奇遇</b>：新增“古旧宝箱”、“道韵灵光”、“游荡孤魂”等 5 种全新奇遇，探索不再枯燥。</li>
+                        <li><b>防重复机制</b>：优化了随机算法，大幅降低了同一奇遇连续触发的概率，让每一次探索都充满新鲜感。</li>
                     </ul>
 
                     <h4 style="color:#e0e0e0; margin:10px 0 5px;">三、数值与逻辑修正</h4>
                     <ul style="padding-left:20px; color:#ccc; list-style-type:disc;">
-                        <li><b>怪物伤害修复</b>：修复了怪物攻击力（Atk/Matk）初始化异常导致挂机战斗中怪物伤害一直为 0 的严重 Bug。</li>
-                        <li><b>技能分类明确</b>：完善了全技能的伤害类型标签（物理/法术），现在乾坤道主要造成物理伤害，阴阳道与鬼道技能（如控魂、阴气侵体）将正确判定为法术伤害。</li>
+                        <li><b>怪物伤害修复</b>：修复了挂机战斗中怪物伤害为 0 的问题。</li>
+                        <li><b>技能分类明确</b>：明确了全技能的物理/法术伤害标签，乾坤道（物理）与阴阳/鬼道（法术）界限分明。</li>
                     </ul>
                 </div>
             `
@@ -401,89 +430,89 @@ const GameData = {
 
     weaponConfig: {
         "修士": [
-            { name: "修士·试锋剑", type: "剑", realm: "修士", base: { physicalPower: 8, techniquePower: 6, spellPower: 1, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·引息刀", type: "刀", realm: "修士", base: { physicalPower: 9, techniquePower: 7, spellPower: 0, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·立势枪", type: "枪", realm: "修士", base: { physicalPower: 10, techniquePower: 6, spellPower: 0, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·清风扇", type: "扇", realm: "修士", base: { physicalPower: 7, techniquePower: 7, spellPower: 1, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·回音笛", type: "笛", realm: "修士", base: { physicalPower: 6, techniquePower: 8, spellPower: 1, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·照影镜", type: "镜", realm: "修士", base: { physicalPower: 6, techniquePower: 6, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·寻脉罗盘", type: "罗盘", realm: "修士", base: { physicalPower: 7, techniquePower: 7, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·纳气葫芦", type: "葫芦", realm: "修士", base: { physicalPower: 7, techniquePower: 6, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·伏邪符杖", type: "符杖", realm: "修士", base: { physicalPower: 8, techniquePower: 7, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·启灵符册", type: "符册", realm: "修士", base: { physicalPower: 6, techniquePower: 7, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·破阵戟", type: "戟", realm: "修士", base: { physicalPower: 10, techniquePower: 6, spellPower: 0, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·镇骨锤", type: "锤", realm: "修士", base: { physicalPower: 11, techniquePower: 5, spellPower: 0, critRate: 0.03, critMult: 1.25, damageReduction: 0.02 }, affixes: [] },
-            { name: "修士·游环", type: "环", realm: "修士", base: { physicalPower: 7, techniquePower: 7, spellPower: 1, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·符印", type: "印", realm: "修士", base: { physicalPower: 6, techniquePower: 7, spellPower: 2, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] },
-            { name: "修士·折羽弓", type: "弓", realm: "修士", base: { physicalPower: 9, techniquePower: 6, spellPower: 0, critRate: 0.03, critMult: 1.25, damageReduction: 0.01 }, affixes: [] }
+            { name: "修士·试锋剑", type: "剑", realm: "修士", base: { physicalPower: 10, techniquePower: 8, spellPower: 2 }, affixes: [] },
+            { name: "修士·引息刀", type: "刀", realm: "修士", base: { physicalPower: 12, techniquePower: 5, spellPower: 0 }, affixes: [] },
+            { name: "修士·立势枪", type: "枪", realm: "修士", base: { physicalPower: 11, techniquePower: 6, spellPower: 0 }, affixes: [] },
+            { name: "修士·清风扇", type: "扇", realm: "修士", base: { physicalPower: 4, techniquePower: 10, spellPower: 6 }, affixes: [] },
+            { name: "修士·回音笛", type: "笛", realm: "修士", base: { physicalPower: 3, techniquePower: 9, spellPower: 7 }, affixes: [] },
+            { name: "修士·照影镜", type: "镜", realm: "修士", base: { physicalPower: 5, techniquePower: 7, spellPower: 8 }, affixes: [] },
+            { name: "修士·寻脉罗盘", type: "罗盘", realm: "修士", base: { physicalPower: 4, techniquePower: 8, spellPower: 8 }, affixes: [] },
+            { name: "修士·纳气葫芦", type: "葫芦", realm: "修士", base: { physicalPower: 8, techniquePower: 8, spellPower: 4 }, affixes: [] },
+            { name: "修士·伏邪符杖", type: "符杖", realm: "修士", base: { physicalPower: 5, techniquePower: 11, spellPower: 6 }, affixes: [] },
+            { name: "修士·启灵符册", type: "符册", realm: "修士", base: { physicalPower: 2, techniquePower: 10, spellPower: 10 }, affixes: [] },
+            { name: "修士·破阵戟", type: "戟", realm: "修士", base: { physicalPower: 14, techniquePower: 4, spellPower: 0 }, affixes: [] },
+            { name: "修士·镇骨锤", type: "锤", realm: "修士", base: { physicalPower: 15, techniquePower: 3, spellPower: 0 }, affixes: [] },
+            { name: "修士·游环", type: "环", realm: "修士", base: { physicalPower: 9, techniquePower: 9, spellPower: 2 }, affixes: [] },
+            { name: "修士·符印", type: "印", realm: "修士", base: { physicalPower: 6, techniquePower: 6, spellPower: 8 }, affixes: [] },
+            { name: "修士·折羽弓", type: "弓", realm: "修士", base: { physicalPower: 11, techniquePower: 7, spellPower: 1 }, affixes: [] }
         ],
         "寻道": [
-            { name: "寻道·试锋剑", type: "剑", realm: "寻道", base: { physicalPower: 15, techniquePower: 12, spellPower: 2, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·引息刀", type: "刀", realm: "寻道", base: { physicalPower: 16, techniquePower: 11, spellPower: 1, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·破浪枪", type: "枪", realm: "寻道", base: { physicalPower: 18, techniquePower: 10, spellPower: 0, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·风雷扇", type: "扇", realm: "寻道", base: { physicalPower: 12, techniquePower: 13, spellPower: 3, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·幽魂笛", type: "笛", realm: "寻道", base: { physicalPower: 11, techniquePower: 12, spellPower: 3, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·影织镜", type: "镜", realm: "寻道", base: { physicalPower: 10, techniquePower: 12, spellPower: 4, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·定星罗盘", type: "罗盘", realm: "寻道", base: { physicalPower: 10, techniquePower: 11, spellPower: 5, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·伏灵葫芦", type: "葫芦", realm: "寻道", base: { physicalPower: 12, techniquePower: 10, spellPower: 3, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·伏法符杖", type: "符杖", realm: "寻道", base: { physicalPower: 12, techniquePower: 10, spellPower: 5, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·九转符册", type: "符册", realm: "寻道", base: { physicalPower: 8, techniquePower: 10, spellPower: 5, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·断岳戟", type: "戟", realm: "寻道", base: { physicalPower: 19, techniquePower: 11, spellPower: 0, critRate: 0.05, critMult: 1.3, damageReduction: 0.03 }, affixes: [] },
-            { name: "寻道·镇骨锤", type: "锤", realm: "寻道", base: { physicalPower: 20, techniquePower: 10, spellPower: 0, critRate: 0.05, critMult: 1.3, damageReduction: 0.03 }, affixes: [] },
-            { name: "寻道·踏云环", type: "环", realm: "寻道", base: { physicalPower: 13, techniquePower: 12, spellPower: 2, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·符印", type: "印", realm: "寻道", base: { physicalPower: 10, techniquePower: 12, spellPower: 4, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] },
-            { name: "寻道·折羽弓", type: "弓", realm: "寻道", base: { physicalPower: 17, techniquePower: 11, spellPower: 0, critRate: 0.05, critMult: 1.3, damageReduction: 0.02 }, affixes: [] }
+            { name: "寻道·试锋剑", type: "剑", realm: "寻道", base: { physicalPower: 20, techniquePower: 16, spellPower: 4 }, affixes: [] },
+            { name: "寻道·引息刀", type: "刀", realm: "寻道", base: { physicalPower: 24, techniquePower: 10, spellPower: 0 }, affixes: [] },
+            { name: "寻道·破浪枪", type: "枪", realm: "寻道", base: { physicalPower: 22, techniquePower: 12, spellPower: 0 }, affixes: [] },
+            { name: "寻道·风雷扇", type: "扇", realm: "寻道", base: { physicalPower: 8, techniquePower: 20, spellPower: 12 }, affixes: [] },
+            { name: "寻道·幽魂笛", type: "笛", realm: "寻道", base: { physicalPower: 6, techniquePower: 18, spellPower: 14 }, affixes: [] },
+            { name: "寻道·影织镜", type: "镜", realm: "寻道", base: { physicalPower: 10, techniquePower: 14, spellPower: 16 }, affixes: [] },
+            { name: "寻道·定星罗盘", type: "罗盘", realm: "寻道", base: { physicalPower: 8, techniquePower: 16, spellPower: 16 }, affixes: [] },
+            { name: "寻道·伏灵葫芦", type: "葫芦", realm: "寻道", base: { physicalPower: 16, techniquePower: 16, spellPower: 8 }, affixes: [] },
+            { name: "寻道·伏法符杖", type: "符杖", realm: "寻道", base: { physicalPower: 10, techniquePower: 22, spellPower: 12 }, affixes: [] },
+            { name: "寻道·九转符册", type: "符册", realm: "寻道", base: { physicalPower: 4, techniquePower: 20, spellPower: 20 }, affixes: [] },
+            { name: "寻道·断岳戟", type: "戟", realm: "寻道", base: { physicalPower: 28, techniquePower: 8, spellPower: 0 }, affixes: [] },
+            { name: "寻道·镇骨锤", type: "锤", realm: "寻道", base: { physicalPower: 30, techniquePower: 6, spellPower: 0 }, affixes: [] },
+            { name: "寻道·踏云环", type: "环", realm: "寻道", base: { physicalPower: 18, techniquePower: 18, spellPower: 4 }, affixes: [] },
+            { name: "寻道·符印", type: "印", realm: "寻道", base: { physicalPower: 12, techniquePower: 12, spellPower: 16 }, affixes: [] },
+            { name: "寻道·折羽弓", type: "弓", realm: "寻道", base: { physicalPower: 22, techniquePower: 14, spellPower: 2 }, affixes: [] }
         ],
         "入道": [
-            { name: "入道·天机剑", type: "剑", realm: "入道", base: { physicalPower: 30, techniquePower: 28, spellPower: 8, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·天罡刀", type: "刀", realm: "入道", base: { physicalPower: 34, techniquePower: 26, spellPower: 6, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·破军枪", type: "枪", realm: "入道", base: { physicalPower: 36, techniquePower: 25, spellPower: 5, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·青霄扇", type: "扇", realm: "入道", base: { physicalPower: 26, techniquePower: 28, spellPower: 9, critRate: 0.1, critMult: 1.4, damageReduction: 0.05 }, affixes: [] },
-            { name: "入道·九霄笛", type: "笛", realm: "入道", base: { physicalPower: 24, techniquePower: 28, spellPower: 12, critRate: 0.1, critMult: 1.4, damageReduction: 0.05 }, affixes: [] },
-            { name: "入道·天映镜", type: "镜", realm: "入道", base: { physicalPower: 25, techniquePower: 30, spellPower: 12, critRate: 0.1, critMult: 1.4, damageReduction: 0.05 }, affixes: [] },
-            { name: "入道·星河罗盘", type: "罗盘", realm: "入道", base: { physicalPower: 28, techniquePower: 30, spellPower: 15, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·玄灵葫芦", type: "葫芦", realm: "入道", base: { physicalPower: 28, techniquePower: 25, spellPower: 10, critRate: 0.1, critMult: 1.4, damageReduction: 0.05 }, affixes: [] },
-            { name: "入道·破阵符杖", type: "符杖", realm: "入道", base: { physicalPower: 27, techniquePower: 30, spellPower: 12, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·天极符册", type: "符册", realm: "入道", base: { physicalPower: 25, techniquePower: 28, spellPower: 15, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·断岳戟", type: "戟", realm: "入道", base: { physicalPower: 38, techniquePower: 28, spellPower: 5, critRate: 0.1, critMult: 1.4, damageReduction: 0.07 }, affixes: [] },
-            { name: "入道·镇天锤", type: "锤", realm: "入道", base: { physicalPower: 40, techniquePower: 22, spellPower: 5, critRate: 0.1, critMult: 1.4, damageReduction: 0.08 }, affixes: [] },
-            { name: "入道·流光环", type: "环", realm: "入道", base: { physicalPower: 26, techniquePower: 30, spellPower: 10, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·玄符印", type: "印", realm: "入道", base: { physicalPower: 24, techniquePower: 28, spellPower: 15, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] },
-            { name: "入道·霜羽弓", type: "弓", realm: "入道", base: { physicalPower: 32, techniquePower: 26, spellPower: 6, critRate: 0.1, critMult: 1.4, damageReduction: 0.06 }, affixes: [] }
+            { name: "入道·天机剑", type: "剑", realm: "入道", base: { physicalPower: 40, techniquePower: 32, spellPower: 8 }, affixes: [] },
+            { name: "入道·天罡刀", type: "刀", realm: "入道", base: { physicalPower: 48, techniquePower: 20, spellPower: 0 }, affixes: [] },
+            { name: "入道·破军枪", type: "枪", realm: "入道", base: { physicalPower: 44, techniquePower: 24, spellPower: 0 }, affixes: [] },
+            { name: "入道·青霄扇", type: "扇", realm: "入道", base: { physicalPower: 16, techniquePower: 40, spellPower: 24 }, affixes: [] },
+            { name: "入道·九霄笛", type: "笛", realm: "入道", base: { physicalPower: 12, techniquePower: 36, spellPower: 28 }, affixes: [] },
+            { name: "入道·天映镜", type: "镜", realm: "入道", base: { physicalPower: 20, techniquePower: 28, spellPower: 32 }, affixes: [] },
+            { name: "入道·星河罗盘", type: "罗盘", realm: "入道", base: { physicalPower: 16, techniquePower: 32, spellPower: 32 }, affixes: [] },
+            { name: "入道·玄灵葫芦", type: "葫芦", realm: "入道", base: { physicalPower: 32, techniquePower: 32, spellPower: 16 }, affixes: [] },
+            { name: "入道·破阵符杖", type: "符杖", realm: "入道", base: { physicalPower: 20, techniquePower: 44, spellPower: 24 }, affixes: [] },
+            { name: "入道·天极符册", type: "符册", realm: "入道", base: { physicalPower: 8, techniquePower: 40, spellPower: 40 }, affixes: [] },
+            { name: "入道·断岳戟", type: "戟", realm: "入道", base: { physicalPower: 56, techniquePower: 16, spellPower: 0 }, affixes: [] },
+            { name: "入道·镇天锤", type: "锤", realm: "入道", base: { physicalPower: 60, techniquePower: 12, spellPower: 0 }, affixes: [] },
+            { name: "入道·流光环", type: "环", realm: "入道", base: { physicalPower: 36, techniquePower: 36, spellPower: 8 }, affixes: [] },
+            { name: "入道·玄符印", type: "印", realm: "入道", base: { physicalPower: 24, techniquePower: 24, spellPower: 32 }, affixes: [] },
+            { name: "入道·霜羽弓", type: "弓", realm: "入道", base: { physicalPower: 44, techniquePower: 28, spellPower: 4 }, affixes: [] }
         ],
         "悟道": [
-            { name: "悟道·无极剑", type: "剑", realm: "悟道", base: { physicalPower: 60, techniquePower: 55, spellPower: 20, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·天罚道剑", type: "剑", realm: "悟道", base: { physicalPower: 70, techniquePower: 60, spellPower: 20, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [{ type: "skill", subType: "skillLearn", value: 1, desc: "附加技能：天罚" }] },
-            { name: "悟道·斩龙刀", type: "刀", realm: "悟道", base: { physicalPower: 68, techniquePower: 58, spellPower: 18, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·破界枪", type: "枪", realm: "悟道", base: { physicalPower: 72, techniquePower: 55, spellPower: 15, critRate: 0.15, critMult: 1.5, damageReduction: 0.11 }, affixes: [] },
-            { name: "悟道·万象扇", type: "扇", realm: "悟道", base: { physicalPower: 52, techniquePower: 55, spellPower: 25, critRate: 0.15, critMult: 1.5, damageReduction: 0.1 }, affixes: [] },
-            { name: "悟道·寒音笛", type: "笛", realm: "悟道", base: { physicalPower: 50, techniquePower: 55, spellPower: 25, critRate: 0.15, critMult: 1.5, damageReduction: 0.1 }, affixes: [] },
-            { name: "悟道·玄灵镜", type: "镜", realm: "悟道", base: { physicalPower: 55, techniquePower: 55, spellPower: 25, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·星河罗盘", type: "罗盘", realm: "悟道", base: { physicalPower: 55, techniquePower: 55, spellPower: 30, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·天元葫芦", type: "葫芦", realm: "悟道", base: { physicalPower: 50, techniquePower: 50, spellPower: 25, critRate: 0.15, critMult: 1.5, damageReduction: 0.1 }, affixes: [] },
-            { name: "悟道·破阵符杖", type: "符杖", realm: "悟道", base: { physicalPower: 55, techniquePower: 55, spellPower: 30, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·乾元符册", type: "符册", realm: "悟道", base: { physicalPower: 55, techniquePower: 50, spellPower: 30, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [{ type: "damage", subType: "spell", value: 0.15, desc: "法术伤害 +15%" }] },
-            { name: "悟道·断岳戟", type: "戟", realm: "悟道", base: { physicalPower: 78, techniquePower: 62, spellPower: 15, critRate: 0.15, critMult: 1.5, damageReduction: 0.13 }, affixes: [] },
-            { name: "悟道·镇天锤", type: "锤", realm: "悟道", base: { physicalPower: 80, techniquePower: 55, spellPower: 15, critRate: 0.15, critMult: 1.5, damageReduction: 0.15 }, affixes: [] },
-            { name: "悟道·太清环", type: "环", realm: "悟道", base: { physicalPower: 55, techniquePower: 60, spellPower: 20, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] },
-            { name: "悟道·玄符印", type: "印", realm: "悟道", base: { physicalPower: 50, techniquePower: 55, spellPower: 30, critRate: 0.15, critMult: 1.5, damageReduction: 0.12 }, affixes: [] }
+            { name: "悟道·无极剑", type: "剑", realm: "悟道", base: { physicalPower: 80, techniquePower: 64, spellPower: 16 }, affixes: [] },
+            { name: "悟道·天罚道剑", type: "剑", realm: "悟道", base: { physicalPower: 90, techniquePower: 70, spellPower: 20 }, affixes: [{ type: "skill", subType: "skillLearn", value: 1, desc: "附加技能：天罚" }] },
+            { name: "悟道·斩龙刀", type: "刀", realm: "悟道", base: { physicalPower: 96, techniquePower: 40, spellPower: 0 }, affixes: [] },
+            { name: "悟道·破界枪", type: "枪", realm: "悟道", base: { physicalPower: 88, techniquePower: 48, spellPower: 0 }, affixes: [] },
+            { name: "悟道·万象扇", type: "扇", realm: "悟道", base: { physicalPower: 32, techniquePower: 80, spellPower: 48 }, affixes: [] },
+            { name: "悟道·寒音笛", type: "笛", realm: "悟道", base: { physicalPower: 24, techniquePower: 72, spellPower: 56 }, affixes: [] },
+            { name: "悟道·玄灵镜", type: "镜", realm: "悟道", base: { physicalPower: 40, techniquePower: 56, spellPower: 64 }, affixes: [] },
+            { name: "悟道·星河罗盘", type: "罗盘", realm: "悟道", base: { physicalPower: 32, techniquePower: 64, spellPower: 64 }, affixes: [] },
+            { name: "悟道·天元葫芦", type: "葫芦", realm: "悟道", base: { physicalPower: 64, techniquePower: 64, spellPower: 32 }, affixes: [] },
+            { name: "悟道·破阵符杖", type: "符杖", realm: "悟道", base: { physicalPower: 40, techniquePower: 88, spellPower: 48 }, affixes: [] },
+            { name: "悟道·乾元符册", type: "符册", realm: "悟道", base: { physicalPower: 16, techniquePower: 80, spellPower: 80 }, affixes: [{ type: "damage", subType: "spell", value: 0.15, desc: "法术伤害 +15%" }] },
+            { name: "悟道·断岳戟", type: "戟", realm: "悟道", base: { physicalPower: 112, techniquePower: 32, spellPower: 0 }, affixes: [] },
+            { name: "悟道·镇天锤", type: "锤", realm: "悟道", base: { physicalPower: 120, techniquePower: 24, spellPower: 0 }, affixes: [] },
+            { name: "悟道·太清环", type: "环", realm: "悟道", base: { physicalPower: 72, techniquePower: 72, spellPower: 16 }, affixes: [] },
+            { name: "悟道·玄符印", type: "印", realm: "悟道", base: { physicalPower: 48, techniquePower: 48, spellPower: 64 }, affixes: [] }
         ],
         "半步地仙": [
-            { name: "半步地仙·问道剑", type: "剑", realm: "半步地仙", base: { physicalPower: 130, techniquePower: 120, spellPower: 60, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·斩界刀", type: "刀", realm: "半步地仙", base: { physicalPower: 150, techniquePower: 110, spellPower: 50, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·破天枪", type: "枪", realm: "半步地仙", base: { physicalPower: 160, techniquePower: 105, spellPower: 45, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·万法扇", type: "扇", realm: "半步地仙", base: { physicalPower: 110, techniquePower: 120, spellPower: 70, critRate: 0.2, critMult: 1.6, damageReduction: 0.18 }, affixes: [] },
-            { name: "半步地仙·天籁笛", type: "笛", realm: "半步地仙", base: { physicalPower: 105, techniquePower: 120, spellPower: 75, critRate: 0.2, critMult: 1.6, damageReduction: 0.18 }, affixes: [] },
-            { name: "半步地仙·照界镜", type: "镜", realm: "半步地仙", base: { physicalPower: 120, techniquePower: 120, spellPower: 70, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·观星罗盘", type: "罗盘", realm: "半步地仙", base: { physicalPower: 115, techniquePower: 125, spellPower: 80, critRate: 0.2, critMult: 1.6, damageReduction: 0.18 }, affixes: [] },
-            { name: "半步地仙·吞海葫芦", type: "葫芦", realm: "半步地仙", base: { physicalPower: 120, techniquePower: 115, spellPower: 65, critRate: 0.2, critMult: 1.6, damageReduction: 0.18 }, affixes: [] },
-            { name: "半步地仙·镇劫符杖", type: "符杖", realm: "半步地仙", base: { physicalPower: 125, techniquePower: 130, spellPower: 85, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·太上符册", type: "符册", realm: "半步地仙", base: { physicalPower: 110, techniquePower: 120, spellPower: 90, critRate: 0.2, critMult: 1.6, damageReduction: 0.18 }, affixes: [] },
-            { name: "半步地仙·裂空戟", type: "戟", realm: "半步地仙", base: { physicalPower: 165, techniquePower: 120, spellPower: 45, critRate: 0.2, critMult: 1.6, damageReduction: 0.22 }, affixes: [] },
-            { name: "半步地仙·镇岳锤", type: "锤", realm: "半步地仙", base: { physicalPower: 170, techniquePower: 105, spellPower: 45, critRate: 0.2, critMult: 1.6, damageReduction: 0.24 }, affixes: [] },
-            { name: "半步地仙·太清环", type: "环", realm: "半步地仙", base: { physicalPower: 120, techniquePower: 135, spellPower: 60, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·天符印", type: "印", realm: "半步地仙", base: { physicalPower: 115, techniquePower: 125, spellPower: 85, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] },
-            { name: "半步地仙·落日弓", type: "弓", realm: "半步地仙", base: { physicalPower: 150, techniquePower: 115, spellPower: 50, critRate: 0.2, critMult: 1.6, damageReduction: 0.2 }, affixes: [] }
+            { name: "半步地仙·问道剑", type: "剑", realm: "半步地仙", base: { physicalPower: 160, techniquePower: 128, spellPower: 32 }, affixes: [] },
+            { name: "半步地仙·斩界刀", type: "刀", realm: "半步地仙", base: { physicalPower: 192, techniquePower: 80, spellPower: 0 }, affixes: [] },
+            { name: "半步地仙·破天枪", type: "枪", realm: "半步地仙", base: { physicalPower: 176, techniquePower: 96, spellPower: 0 }, affixes: [] },
+            { name: "半步地仙·万法扇", type: "扇", realm: "半步地仙", base: { physicalPower: 64, techniquePower: 160, spellPower: 96 }, affixes: [] },
+            { name: "半步地仙·天籁笛", type: "笛", realm: "半步地仙", base: { physicalPower: 48, techniquePower: 144, spellPower: 112 }, affixes: [] },
+            { name: "半步地仙·照界镜", type: "镜", realm: "半步地仙", base: { physicalPower: 80, techniquePower: 112, spellPower: 128 }, affixes: [] },
+            { name: "半步地仙·观星罗盘", type: "罗盘", realm: "半步地仙", base: { physicalPower: 64, techniquePower: 128, spellPower: 128 }, affixes: [] },
+            { name: "半步地仙·吞海葫芦", type: "葫芦", realm: "半步地仙", base: { physicalPower: 128, techniquePower: 128, spellPower: 64 }, affixes: [] },
+            { name: "半步地仙·镇劫符杖", type: "符杖", realm: "半步地仙", base: { physicalPower: 80, techniquePower: 176, spellPower: 96 }, affixes: [] },
+            { name: "半步地仙·太上符册", type: "符册", realm: "半步地仙", base: { physicalPower: 32, techniquePower: 160, spellPower: 160 }, affixes: [] },
+            { name: "半步地仙·裂空戟", type: "戟", realm: "半步地仙", base: { physicalPower: 224, techniquePower: 64, spellPower: 0 }, affixes: [] },
+            { name: "半步地仙·镇岳锤", type: "锤", realm: "半步地仙", base: { physicalPower: 240, techniquePower: 48, spellPower: 0 }, affixes: [] },
+            { name: "半步地仙·太清环", type: "环", realm: "半步地仙", base: { physicalPower: 144, techniquePower: 144, spellPower: 32 }, affixes: [] },
+            { name: "半步地仙·天符印", type: "印", realm: "半步地仙", base: { physicalPower: 96, techniquePower: 96, spellPower: 128 }, affixes: [] },
+            { name: "半步地仙·落日弓", type: "弓", realm: "半步地仙", base: { physicalPower: 176, techniquePower: 112, spellPower: 16 }, affixes: [] }
         ]
     },
 
@@ -516,6 +545,40 @@ const GameData = {
         "五鬼搬运符": { type: "talisman", grade: "蓝", reqLevel: "寻道", mpCost: 40, cooldown: { kind: "world", oncePerMap: true }, desc: "掉落 +25%，并可偷取一次奖励。", talisman: { kind: "loot_boost", dropMult: 1.25, stealOnce: true } },
         "朱雀火凤符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "造成 130% 火伤，并施加灼烧 2 回合（每回合损失 5% HP）。", talisman: { kind: "dot", element: "fire", mult: 1.3, dot: { id: "burn", duration: 2, hpPct: 0.05 } } },
         "玄武水渊符": { type: "talisman", grade: "红", reqLevel: "入道", mpCost: 80, cooldown: { kind: "battle", rounds: 3 }, desc: "造成 130% 水伤，并获得减伤 +30%（2 回合）。", talisman: { kind: "strike_and_shield", element: "water", mult: 1.3, duration: 2, takenMult: 0.7 } }
+    },
+
+    affixPools: {
+        typeWeights: { stable: 65, conditional: 25, rhythm: 8, destiny: 2 },
+        valueTiers: [
+            { weight: 60, tier: "low" },
+            { weight: 30, tier: "mid" },
+            { weight: 10, tier: "high" }
+        ],
+        diminishing: [1, 0.7, 0.4],
+        pools: {
+            stable: [
+                { id: "atk_pct", label: "攻击力", kind: "stable", stackKey: "dmg_pct", min: 0.01, max: 0.04, unit: "pct" },
+                { id: "hp_pct", label: "生命上限", kind: "stable", stackKey: "hp_pct", min: 0.02, max: 0.06, unit: "pct" },
+                { id: "dr_pct", label: "防御力", kind: "stable", stackKey: "dr_pct", min: 0.02, max: 0.06, unit: "pct" },
+                { id: "critdmg_pct", label: "暴击伤害", kind: "stable", stackKey: "crit_mult_add", min: 0.04, max: 0.10, unit: "pct" }
+            ],
+            conditional: [
+                { id: "open_2r_atk", label: "开战增益", kind: "conditional", conditionGroup: "open", stackKey: "dmg_pct", min: 0.03, max: 0.06, unit: "pct", condition: { type: "round_le", value: 2 } },
+                { id: "enemy_lowhp_atk", label: "敌方低血", kind: "conditional", conditionGroup: "hp_low", stackKey: "dmg_pct", min: 0.04, max: 0.08, unit: "pct", condition: { type: "target_hp_le", value: 0.3 } },
+                { id: "self_lowhp_atk", label: "自身低血", kind: "conditional", conditionGroup: "hp_low", stackKey: "dmg_pct", min: 0.04, max: 0.08, unit: "pct", condition: { type: "self_hp_le", value: 0.3 } },
+                { id: "after_5r_atk", label: "持续作战", kind: "conditional", conditionGroup: "late", stackKey: "dmg_pct", min: 0.03, max: 0.06, unit: "pct", condition: { type: "round_ge", value: 5 } }
+            ],
+            rhythm: [
+                { id: "kill_heal_hp", label: "击杀回复", kind: "rhythm", stackKey: "kill_heal", min: 0.01, max: 0.03, unit: "pct", trigger: { type: "on_kill" } },
+                { id: "kill_nextbattle_atk", label: "击杀强化", kind: "rhythm", stackKey: "next_battle_atk", min: 0.02, max: 0.04, unit: "pct", trigger: { type: "on_kill", stacksMax: 3 } },
+                { id: "streak_recovery", label: "连战恢复", kind: "rhythm", stackKey: "streak_recovery", min: 0.05, max: 0.10, unit: "pct", trigger: { type: "out_of_combat" } }
+            ],
+            destiny: [
+                { id: "bound_critdmg", label: "绑定型", kind: "destiny", stackKey: "crit_mult_add", min: 0.06, max: 0.06, unit: "pct", rule: { type: "bound_main_weapon_only" } },
+                { id: "growth_kills_atk", label: "成长型", kind: "destiny", stackKey: "growth_atk", min: 0.003, max: 0.003, unit: "pct", rule: { type: "per_kills", per: 100, cap: 0.06 } },
+                { id: "awakening_boost_conditional", label: "阶段型", kind: "destiny", stackKey: "conditional_boost", min: 0.20, max: 0.20, unit: "pct", rule: { type: "awakened_conditional_boost" } }
+            ]
+        }
     },
 
     skillConfig: {},
@@ -685,6 +748,7 @@ const GameData = {
                     id: "follow",
                     text: "循影而行",
                     log: "你顺着那道影子走了两步，阴风裹住脚踝。符火余烬未散，似可借道一次。",
+                    delta: { playerMp: 5 },
                     meta: { story: { setFlags: { yin_pass_ready: true } } }
                 },
                 { id: "leave", text: "不作停留", log: "你压住杂念，离开桥边。水声仍在数你的心跳。" }
@@ -697,7 +761,7 @@ const GameData = {
             desc: "路边有一撮纸灰尚温，像刚烧过不久。你闻到一丝淡淡的香灰味。",
             meta: { tendencyTags: ["order"] },
             options: [
-                { id: "cover", text: "以土覆灰", log: "你以土覆灰，心念稍定。", delta: { playerMp: 2 } },
+                { id: "cover", text: "以土覆灰", log: "你以土覆灰，心念稍定。", delta: { playerMp: 10 } },
                 { id: "scatter", text: "随风散去", log: "你让纸灰随风散去，像把某段因果还给了夜色。" }
             ]
         },
@@ -708,8 +772,8 @@ const GameData = {
             desc: "你听见背后有人低语，却分不清是风声还是人的话。",
             meta: { tendencyTags: ["chaos"] },
             options: [
-                { id: "listen", text: "停步倾听", log: "你停步倾听，耳畔嗡鸣更甚，心神微乱。", delta: { playerMp: -3 } },
-                { id: "chant", text: "默诵护心诀", log: "你默诵护心诀，低语渐远。", delta: { playerMp: 1 } }
+                { id: "listen", text: "停步倾听", log: "你停步倾听，耳畔嗡鸣更甚，心神微乱。", delta: { playerMp: -10 } },
+                { id: "chant", text: "默诵护心诀", log: "你默诵护心诀，低语渐远。", delta: { playerMp: 5 } }
             ]
         },
         {
@@ -719,8 +783,88 @@ const GameData = {
             desc: "雾里浮起一点冷灯，照不见灯芯，却照得见你的影子。",
             meta: { tendencyTags: ["omen"] },
             options: [
-                { id: "bow", text: "向灯一揖", log: "你向灯一揖，胸口那点不安散了些。", delta: { playerHp: 3 } },
-                { id: "stare", text: "凝视灯影", log: "你凝视灯影，忽觉目眩，像被看了一眼。", delta: { playerMp: -2 } }
+                { id: "bow", text: "向灯一揖", log: "你向灯一揖，胸口那点不安散了些。", delta: { playerHp: 15 } },
+                { id: "stare", text: "凝视灯影", log: "你凝视灯影，忽觉目眩，像被看了一眼。", delta: { playerMp: -5 } }
+            ]
+        },
+        {
+            id: "evt_ambient_treasure_chest",
+            eventType: "trial",
+            title: "遗落行囊",
+            desc: "草丛中露出一角发黑的布包，不知是哪位前人留下的行囊。",
+            meta: { rarity: "uncommon" },
+            options: [
+                { 
+                    id: "open", 
+                    text: "检视行囊", 
+                    log: "你打开布包，里面竟藏着几枚未散的灵石与丹药。", 
+                    delta: { playerHp: 10, playerMp: 10 } // 简单奖励，实际物品需通过 flag 或 logic 给予，此处简化
+                },
+                { id: "leave", text: "谨防有诈", log: "你未动贪念，转身离去。" }
+            ]
+        },
+        {
+            id: "evt_ambient_dao_insight",
+            eventType: "enlightenment",
+            title: "道韵残痕",
+            desc: "山壁上刻着一道极深的剑痕，虽历经风雨，仍透出一股凌厉剑意。",
+            meta: { rarity: "rare", tendencyTags: ["order"] },
+            options: [
+                { 
+                    id: "meditate", 
+                    text: "观痕悟道", 
+                    log: "你凝视剑痕，仿佛看见昔日修士一剑破空的景象，心中若有所悟。", 
+                    delta: { expDelta: 30, playerMp: -10 } 
+                },
+                { id: "ignore", text: "匆匆路过", log: "你未能驻足，剑意随风而逝。" }
+            ]
+        },
+        {
+            id: "evt_ambient_wandering_ghost",
+            eventType: "trial",
+            title: "游荡孤魂",
+            desc: "一只神智未开的孤魂在路中徘徊，似乎在寻找什么。",
+            meta: { tendencyTags: ["chaos"] },
+            options: [
+                { 
+                    id: "soothe", 
+                    text: "度化安抚", 
+                    log: "你口诵往生咒，孤魂化作轻烟散去，留下一缕精纯魂气。", 
+                    delta: { playerMp: 15 } 
+                },
+                { id: "shout", text: "厉声喝退", log: "你厉声一喝，孤魂惊惧逃窜。" }
+            ]
+        },
+        {
+            id: "evt_ambient_ancient_formation",
+            eventType: "enlightenment",
+            title: "残缺阵盘",
+            desc: "地脉汇聚之处，隐约可见一方残缺的聚灵阵盘。",
+            meta: { rarity: "rare" },
+            options: [
+                { 
+                    id: "repair", 
+                    text: "注入灵力修补", 
+                    log: "你注入灵力，阵盘短暂运转，喷涌出浓郁灵气滋养你的经脉。", 
+                    delta: { playerMp: -20, playerHp: 50, expDelta: 20 } 
+                },
+                { id: "destroy", text: "毁去阵眼", log: "你毁去阵眼，防止被邪祟利用。" }
+            ]
+        },
+        {
+            id: "evt_ambient_spirit_spring",
+            eventType: "trial",
+            title: "灵泉暗涌",
+            desc: "岩缝间渗出一股清泉，灵气盎然，仅闻一口便觉精神百倍。",
+            meta: { rarity: "uncommon" },
+            options: [
+                { 
+                    id: "drink", 
+                    text: "饮用泉水", 
+                    log: "甘冽泉水入喉，四肢百骸如浸温汤，疲惫尽消。", 
+                    delta: { playerHp: 30, playerMp: 30 } 
+                },
+                { id: "wash", text: "清洗伤口", log: "你用泉水清洗伤口，痛感顿减。", delta: { playerHp: 40 } }
             ]
         },
         {
@@ -1248,7 +1392,12 @@ const GameData = {
             const cm = Number.isFinite(Number(base.critMult)) ? Number(base.critMult) : 1.5;
             const dr = Number(base.damageReduction) || 0;
             const type = typeof w.type === 'string' && w.type.trim() ? w.type.trim() : '器';
-            const desc = `本命器（${realm}·${type}） 物${phys} 术${tech} 法${spell} 暴${Math.round(cr * 100)}% 倍${Math.round(cm * 100) / 100} 减${Math.round(dr * 100)}%`;
+            
+            let desc = `本命器（${realm}·${type}） 物${phys} 术${tech} 法${spell}`;
+            if (cr > 0) desc += ` 暴${Math.round(cr * 100)}%`;
+            if (cm > 1.5) desc += ` 倍${Math.round(cm * 100) / 100}`;
+            if (dr > 0) desc += ` 减${Math.round(dr * 100)}%`;
+            
             GameData.itemConfig[name] = { type: 'weapon', desc, weapon: w };
         }
     }
