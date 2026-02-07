@@ -9,31 +9,31 @@ const GameData = {
     realmProgression: [
         // === 第一阶：凡俗 ===
         { realm: "凡人", subRealm: "凡俗", stage: "凡人", maxExp: 100, hpBonus: 0, atkBonus: 0, matkBonus: 0 },
-        { realm: "修士", subRealm: "入世", stage: "修士", maxExp: 500, hpBonus: 50, atkBonus: 5, matkBonus: 5 },
+        { realm: "修士", subRealm: "入世", stage: "修士", maxExp: 600, hpBonus: 50, atkBonus: 5, matkBonus: 5 },
         
         // === 第二阶：寻道 (五小境界) ===
-        { realm: "寻道", subRealm: "初期", stage: "寻道初期", maxExp: 1000, hpBonus: 100, atkBonus: 10, matkBonus: 10 },
-        { realm: "寻道", subRealm: "中期", stage: "寻道中期", maxExp: 2000, hpBonus: 100, atkBonus: 10, matkBonus: 10 },
-        { realm: "寻道", subRealm: "后期", stage: "寻道后期", maxExp: 3500, hpBonus: 100, atkBonus: 10, matkBonus: 10 },
-        { realm: "寻道", subRealm: "巅峰", stage: "寻道巅峰", maxExp: 5000, hpBonus: 150, atkBonus: 15, matkBonus: 15 },
-        { realm: "寻道", subRealm: "圆满", stage: "寻道圆满", maxExp: 7500, hpBonus: 200, atkBonus: 20, matkBonus: 20 },
+        { realm: "寻道", subRealm: "初期", stage: "寻道初期", maxExp: 1200, hpBonus: 90, atkBonus: 9, matkBonus: 9 },
+        { realm: "寻道", subRealm: "中期", stage: "寻道中期", maxExp: 2500, hpBonus: 110, atkBonus: 11, matkBonus: 11 },
+        { realm: "寻道", subRealm: "后期", stage: "寻道后期", maxExp: 4000, hpBonus: 130, atkBonus: 13, matkBonus: 13 },
+        { realm: "寻道", subRealm: "巅峰", stage: "寻道巅峰", maxExp: 6000, hpBonus: 160, atkBonus: 16, matkBonus: 16 },
+        { realm: "寻道", subRealm: "圆满", stage: "寻道圆满", maxExp: 8500, hpBonus: 200, atkBonus: 20, matkBonus: 20 },
         
         // === 第三阶：入道 (五小境界) ===
-        { realm: "入道", subRealm: "初期", stage: "入道初期", maxExp: 12000, hpBonus: 300, atkBonus: 30, matkBonus: 30 },
-        { realm: "入道", subRealm: "中期", stage: "入道中期", maxExp: 18000, hpBonus: 300, atkBonus: 30, matkBonus: 30 },
-        { realm: "入道", subRealm: "后期", stage: "入道后期", maxExp: 26000, hpBonus: 300, atkBonus: 30, matkBonus: 30 },
-        { realm: "入道", subRealm: "巅峰", stage: "入道巅峰", maxExp: 36000, hpBonus: 400, atkBonus: 40, matkBonus: 40 },
-        { realm: "入道", subRealm: "圆满", stage: "入道圆满", maxExp: 50000, hpBonus: 500, atkBonus: 50, matkBonus: 50 },
+        { realm: "入道", subRealm: "初期", stage: "入道初期", maxExp: 15000, hpBonus: 260, atkBonus: 26, matkBonus: 26 },
+        { realm: "入道", subRealm: "中期", stage: "入道中期", maxExp: 23000, hpBonus: 300, atkBonus: 30, matkBonus: 30 },
+        { realm: "入道", subRealm: "后期", stage: "入道后期", maxExp: 34000, hpBonus: 350, atkBonus: 35, matkBonus: 35 },
+        { realm: "入道", subRealm: "巅峰", stage: "入道巅峰", maxExp: 48000, hpBonus: 420, atkBonus: 42, matkBonus: 42 },
+        { realm: "入道", subRealm: "圆满", stage: "入道圆满", maxExp: 65000, hpBonus: 500, atkBonus: 50, matkBonus: 50 },
 
         // === 第四阶：悟道 (五小境界) ===
-        { realm: "悟道", subRealm: "初期", stage: "悟道初期", maxExp: 70000, hpBonus: 600, atkBonus: 60, matkBonus: 60 },
-        { realm: "悟道", subRealm: "中期", stage: "悟道中期", maxExp: 90000, hpBonus: 600, atkBonus: 60, matkBonus: 60 },
-        { realm: "悟道", subRealm: "后期", stage: "悟道后期", maxExp: 120000, hpBonus: 600, atkBonus: 60, matkBonus: 60 },
-        { realm: "悟道", subRealm: "巅峰", stage: "悟道巅峰", maxExp: 150000, hpBonus: 800, atkBonus: 80, matkBonus: 80 },
-        { realm: "悟道", subRealm: "圆满", stage: "悟道圆满", maxExp: 200000, hpBonus: 1000, atkBonus: 100, matkBonus: 100 },
+        { realm: "悟道", subRealm: "初期", stage: "悟道初期", maxExp: 85000, hpBonus: 600, atkBonus: 60, matkBonus: 60 },
+        { realm: "悟道", subRealm: "中期", stage: "悟道中期", maxExp: 115000, hpBonus: 680, atkBonus: 68, matkBonus: 68 },
+        { realm: "悟道", subRealm: "后期", stage: "悟道后期", maxExp: 150000, hpBonus: 760, atkBonus: 76, matkBonus: 76 },
+        { realm: "悟道", subRealm: "巅峰", stage: "悟道巅峰", maxExp: 200000, hpBonus: 880, atkBonus: 88, matkBonus: 88 },
+        { realm: "悟道", subRealm: "圆满", stage: "悟道圆满", maxExp: 270000, hpBonus: 1050, atkBonus: 105, matkBonus: 105 },
 
         // === 第五阶：半步地仙 (无小境界) ===
-        { realm: "半步地仙", subRealm: "半仙", stage: "半步地仙", maxExp: 500000, hpBonus: 5000, atkBonus: 500, matkBonus: 500 }
+        { realm: "半步地仙", subRealm: "半仙", stage: "半步地仙", maxExp: 700000, hpBonus: 4500, atkBonus: 450, matkBonus: 450 }
         
         // 地仙暂不开放
     ],
