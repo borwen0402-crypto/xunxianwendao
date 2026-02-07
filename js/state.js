@@ -599,6 +599,23 @@ const gameState = {
             const w = baseItem && baseItem.weapon && typeof baseItem.weapon === 'object' ? baseItem.weapon : null;
             return w;
         };
+        const buildWeaponDesc = (weapon, baseOverride) => {
+            if (!weapon || typeof weapon !== 'object') return '';
+            const base = baseOverride && typeof baseOverride === 'object' ? baseOverride : (weapon.base && typeof weapon.base === 'object' ? weapon.base : {});
+            const realm = typeof weapon.realm === 'string' && weapon.realm.trim() ? weapon.realm.trim() : '未知';
+            const type = typeof weapon.type === 'string' && weapon.type.trim() ? weapon.type.trim() : '器';
+            const phys = Number(base.physicalPower) || 0;
+            const tech = Number(base.techniquePower) || 0;
+            const spell = Number(base.spellPower) || 0;
+            const cr = Number(base.critRate) || 0;
+            const cm = Number.isFinite(Number(base.critMult)) ? Number(base.critMult) : 1.5;
+            const dr = Number(base.damageReduction) || 0;
+            let desc = `本命器（${realm}·${type}） 物${phys} 术${tech} 法${spell}`;
+            if (cr > 0) desc += ` 暴${Math.round(cr * 100)}%`;
+            if (cm > 1.5) desc += ` 倍${Math.round(cm * 100) / 100}`;
+            if (dr > 0) desc += ` 减${Math.round(dr * 100)}%`;
+            return desc;
+        };
 
         for (let i = 0; i < keys.length; i++) {
             const k = keys[i];
@@ -608,20 +625,29 @@ const gameState = {
             const weapon = resolveBaseWeapon(baseName);
             if (!weapon) continue;
             const base = weapon.base && typeof weapon.base === 'object' ? weapon.base : {};
+            const baseBonus = meta && meta.baseBonus && typeof meta.baseBonus === 'object' ? meta.baseBonus : null;
+            const bonusAtk = baseBonus && Number.isFinite(Number(baseBonus.atk)) ? Number(baseBonus.atk) : 0;
+            const bonusCrit = baseBonus && Number.isFinite(Number(baseBonus.critMult)) ? Number(baseBonus.critMult) : 0;
+            const baseCrit = Number.isFinite(Number(base.critMult)) ? Number(base.critMult) : 1.5;
+            const adjustedBase = {
+                ...base,
+                physicalPower: (Number(base.physicalPower) || 0) + bonusAtk,
+                critMult: baseCrit + bonusCrit
+            };
             const aff = Array.isArray(meta.affixes) ? meta.affixes : [];
             const lines = [];
             for (let j = 0; j < aff.length; j++) {
                 const s = fmtAffix(aff[j]);
                 if (s) lines.push(s);
             }
-            const descBase = typeof (GameData.itemConfig[baseName] && GameData.itemConfig[baseName].desc) === 'string'
+            const descBase = buildWeaponDesc(weapon, adjustedBase) || (typeof (GameData.itemConfig[baseName] && GameData.itemConfig[baseName].desc) === 'string'
                 ? GameData.itemConfig[baseName].desc
-                : baseName;
+                : baseName);
             const desc = lines.length ? `${descBase}\n` + lines.map(x => `- ${x}`).join('\n') : descBase;
             GameData.itemConfig[k] = {
                 type: 'weapon',
                 desc,
-                weapon: { ...weapon, base: { ...base }, rolledAffixes: aff, instanceKey: k, baseName }
+                weapon: { ...weapon, base: { ...adjustedBase }, rolledAffixes: aff, instanceKey: k, baseName }
             };
         }
         return true;

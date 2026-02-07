@@ -1096,6 +1096,22 @@ const Logic = {
         if (!gameState.inventory || typeof gameState.inventory !== 'object') gameState.inventory = {};
 
         const rng = typeof o.rng === 'function' ? o.rng : (() => gameState.rng());
+        const m = meta && typeof meta === 'object' ? meta : {};
+        const isMainWeapon = m.quality === 'main_weapon' || (m.binds && m.binds.mainWeapon);
+        let baseBonus = null;
+        if (isMainWeapon && typeof GameData !== 'undefined' && GameData && GameData.itemConfig && GameData.itemConfig[bn]) {
+            const itemCfg = GameData.itemConfig[bn];
+            const weapon = itemCfg && itemCfg.weapon && typeof itemCfg.weapon === 'object' ? itemCfg.weapon : null;
+            const base = weapon && weapon.base && typeof weapon.base === 'object' ? weapon.base : null;
+            if (base) {
+                const baseAtk = Math.max(0, Math.floor(Number(base.physicalPower) || 0));
+                const baseCrit = Number.isFinite(Number(base.critMult)) ? Number(base.critMult) : 1.5;
+                const atkBonusPct = 0.05 + rng() * 0.15;
+                const critBonus = Math.round((0.02 + rng() * 0.08) * 100) / 100;
+                const atkBonus = baseAtk > 0 ? Math.max(1, Math.floor(baseAtk * atkBonusPct)) : 0;
+                baseBonus = { atk: atkBonus, critMult: critBonus, baseAtk, baseCrit };
+            }
+        }
         const shortId = (() => {
             for (let tries = 0; tries < 20; tries++) {
                 const n = Math.floor(Math.max(0, Math.min(0.999999, rng())) * 1679616);
@@ -1107,10 +1123,16 @@ const Logic = {
             return n1.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
         })();
         const instanceKey = `${bn}#${shortId}`;
-        const m = meta && typeof meta === 'object' ? meta : {};
         const affixes = Array.isArray(m.affixes) ? m.affixes : [];
         const createdAt = (gameState.story && typeof gameState.story === 'object' && Number.isFinite(Number(gameState.story.tick))) ? Math.floor(Number(gameState.story.tick)) : 0;
-        gameState.itemInstances[instanceKey] = { baseName: bn, quality: m.quality || null, affixes, createdAt, binds: m.binds && typeof m.binds === 'object' ? { ...m.binds } : {} };
+        gameState.itemInstances[instanceKey] = {
+            baseName: bn,
+            quality: m.quality || null,
+            affixes,
+            createdAt,
+            binds: m.binds && typeof m.binds === 'object' ? { ...m.binds } : {},
+            baseBonus: baseBonus && typeof baseBonus === 'object' ? { ...baseBonus } : null
+        };
 
         if (typeof gameState.rehydrateItemInstances === 'function') gameState.rehydrateItemInstances();
         gameState.inventory[instanceKey] = (Number(gameState.inventory[instanceKey]) || 0) + 1;
